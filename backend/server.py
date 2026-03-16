@@ -124,6 +124,10 @@ class FCMTokenRegister(BaseModel):
 class PauseDeliveryReq(BaseModel):
     pause_until: str  # ISO date string
 
+class HouseholdUpdate(BaseModel):
+    primary_name: Optional[str] = None
+    primary_email: Optional[str] = None
+
 # ─── Auth Routes ──────────────────────────────────────────────────────────────
 
 @api_router.post('/auth/send-otp')
@@ -239,6 +243,21 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     raise HTTPException(404, 'User not found')
 
 # ─── Household Routes ─────────────────────────────────────────────────────────
+
+@api_router.patch('/households/me')
+async def update_household(req: HouseholdUpdate, current_user: dict = Depends(get_current_user)):
+    household_id = current_user['sub']
+    update = {k: v for k, v in req.dict().items() if v is not None}
+    if not update:
+        raise HTTPException(400, 'No fields to update')
+    await db.households.update_one({'id': household_id}, {'$set': update})
+    hh = await db.households.find_one({'id': household_id})
+    if not hh: raise HTTPException(404, 'Household not found')
+    pkg = await db.packages.find_one({'id': hh.get('package_id', '')})
+    comm = await db.communities.find_one({'id': hh.get('community_id', '')})
+    hh['package'] = strip_id(pkg) if pkg else None
+    hh['community'] = strip_id(comm) if comm else None
+    return strip_id(hh)
 
 @api_router.get('/households/{household_id}')
 async def get_household(household_id: str, current_user: dict = Depends(get_current_user)):
