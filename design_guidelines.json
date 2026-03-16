@@ -1,0 +1,276 @@
+{
+  "brand_identity": {
+    "app_name": "WELLDHAN",
+    "tagline": "Your community's wellness + organic food platform",
+    "theme_mode": "dark",
+    "emotional_archetype": "ORGANIC & EARTHY (Archetype 1) + PERFORMANCE PRO (Archetype 2)",
+    "core_values": ["Trust", "Vitality", "Community", "Premium Organic"],
+    "design_philosophy": "Glassmorphism meets Organic Dark Mode. High contrast for readability, lush greens for vitality, and deep blacks for premium feel. No standard flat design—use depth, blur, and texture."
+  },
+  "typography": {
+    "font_family_heading": "Manrope",
+    "font_family_body": "Inter",
+    "scale": {
+      "xs": 12,
+      "sm": 14,
+      "base": 16,
+      "lg": 18,
+      "xl": 20,
+      "2xl": 24,
+      "3xl": 30,
+      "4xl": 36,
+      "5xl": 48
+    },
+    "weights": {
+      "regular": "400",
+      "medium": "500",
+      "semibold": "600",
+      "bold": "700",
+      "extrabold": "800"
+    },
+    "letter_spacing": {
+      "tighter": -0.8,
+      "tight": -0.4,
+      "normal": 0,
+      "wide": 0.4
+    },
+    "styles": {
+      "h1": {
+        "fontSize": 36,
+        "fontWeight": "800",
+        "color": "#ffffff",
+        "fontFamily": "Manrope"
+      },
+      "h2": {
+        "fontSize": 30,
+        "fontWeight": "700",
+        "color": "#ffffff",
+        "fontFamily": "Manrope"
+      },
+      "h3": {
+        "fontSize": 24,
+        "fontWeight": "600",
+        "color": "#ffffff",
+        "fontFamily": "Manrope"
+      },
+      "body_lg": {
+        "fontSize": 18,
+        "fontWeight": "400",
+        "color": "#9ca3af",
+        "fontFamily": "Inter"
+      },
+      "body_base": {
+        "fontSize": 16,
+        "fontWeight": "400",
+        "color": "#9ca3af",
+        "fontFamily": "Inter"
+      },
+      "caption": {
+        "fontSize": 12,
+        "fontWeight": "500",
+        "color": "#6b7280",
+        "fontFamily": "Inter",
+        "textTransform": "uppercase",
+        "letterSpacing": 1
+      }
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": "#1a4d2e",
+      "primary_dark": "#143d23",
+      "secondary": "#2d7a47",
+      "accent": "#4ade80",
+      "accent_glow": "rgba(74, 222, 128, 0.3)",
+      "background": "#0f1117",
+      "surface": "#1a1a2e",
+      "surface_highlight": "#232338",
+      "error": "#ef4444",
+      "success": "#22c55e",
+      "warning": "#f59e0b",
+      "text": {
+        "primary": "#ffffff",
+        "secondary": "#9ca3af",
+        "muted": "#6b7280",
+        "accent": "#4ade80"
+      },
+      "border": "rgba(255, 255, 255, 0.1)",
+      "glass": "rgba(26, 26, 46, 0.7)"
+    },
+    "gradients": {
+      "primary_card": ["#1a4d2e", "#0f1117"],
+      "accent_button": ["#4ade80", "#2d7a47"],
+      "glass_overlay": ["rgba(255,255,255,0.05)", "rgba(255,255,255,0.02)"]
+    }
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "2xl": 48,
+    "3xl": 64,
+    "layout": {
+      "screen_padding": 20,
+      "card_padding": 20,
+      "section_gap": 32
+    },
+    "radius": {
+      "sm": 8,
+      "md": 12,
+      "lg": 20,
+      "xl": 32,
+      "full": 9999
+    }
+  },
+  "layout_strategies": {
+    "mobile_container": {
+      "flex": 1,
+      "backgroundColor": "#0f1117"
+    },
+    "safe_area": {
+      "flex": 1,
+      "backgroundColor": "#0f1117"
+    },
+    "card_glass": {
+      "backgroundColor": "rgba(26, 26, 46, 0.7)",
+      "borderRadius": 20,
+      "borderWidth": 1,
+      "borderColor": "rgba(255, 255, 255, 0.08)",
+      "padding": 20,
+      "shadowColor": "#000",
+      "shadowOffset": { "width": 0, "height": 4 },
+      "shadowOpacity": 0.3,
+      "shadowRadius": 10,
+      "elevation": 5
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": {
+        "backgroundColor": "#4ade80",
+        "paddingVertical": 16,
+        "paddingHorizontal": 32,
+        "borderRadius": 16,
+        "alignItems": "center",
+        "shadowColor": "#4ade80",
+        "shadowOffset": { "width": 0, "height": 4 },
+        "shadowOpacity": 0.3,
+        "shadowRadius": 12,
+        "elevation": 6
+      },
+      "secondary": {
+        "backgroundColor": "rgba(255, 255, 255, 0.1)",
+        "paddingVertical": 16,
+        "paddingHorizontal": 32,
+        "borderRadius": 16,
+        "alignItems": "center",
+        "borderWidth": 1,
+        "borderColor": "rgba(255, 255, 255, 0.2)"
+      },
+      "text_style": {
+        "color": "#0f1117",
+        "fontWeight": "700",
+        "fontSize": 16,
+        "fontFamily": "Manrope"
+      }
+    },
+    "inputs": {
+      "base": {
+        "backgroundColor": "rgba(255, 255, 255, 0.05)",
+        "borderRadius": 12,
+        "borderWidth": 1,
+        "borderColor": "rgba(255, 255, 255, 0.1)",
+        "padding": 16,
+        "color": "#ffffff",
+        "fontSize": 16,
+        "fontFamily": "Inter"
+      },
+      "focused": {
+        "borderColor": "#4ade80",
+        "backgroundColor": "rgba(74, 222, 128, 0.05)"
+      }
+    },
+    "cards": {
+      "booking_card": {
+        "backgroundColor": "#1a1a2e",
+        "borderRadius": 16,
+        "padding": 16,
+        "marginBottom": 16,
+        "borderLeftWidth": 4,
+        "borderLeftColor": "#4ade80"
+      },
+      "food_item": {
+        "flexDirection": "row",
+        "alignItems": "center",
+        "backgroundColor": "rgba(255,255,255,0.03)",
+        "borderRadius": 12,
+        "padding": 12,
+        "marginBottom": 12
+      }
+    }
+  },
+  "assets": {
+    "images": {
+      "splash_bg": "gradient or pure #1a4d2e",
+      "trainer_placeholder": "https://images.unsplash.com/photo-1582771801019-03164036ed31?auto=format&fit=crop&q=80",
+      "food_basket": "https://images.unsplash.com/photo-1633955421856-6965f8fa39ee?auto=format&fit=crop&q=80",
+      "vegetables": "https://images.unsplash.com/photo-1675266439041-15d522c4dcb7?auto=format&fit=crop&q=80",
+      "community": "https://images.unsplash.com/photo-1665250855519-25e3f817a96f?auto=format&fit=crop&q=80",
+      "badminton": "https://images.unsplash.com/photo-1761286753703-570ed91dd90e?auto=format&fit=crop&q=80",
+      "pool": "https://images.unsplash.com/photo-1615762333968-f0d871ff5210?auto=format&fit=crop&q=80",
+      "gym_bg": "https://images.unsplash.com/photo-1693214674451-2111f7690877?auto=format&fit=crop&q=80"
+    },
+    "icons": {
+      "library": "Lucide React Native or Expo Vector Icons (Feather/Ionicons)",
+      "style": "Thin strokes (1.5px), color #4ade80 or #ffffff"
+    }
+  },
+  "navigation_structure": {
+    "type": "Role-Based Bottom Tabs",
+    "roles": {
+      "user": [
+        { "name": "Home", "icon": "Home", "label": "Dashboard" },
+        { "name": "BookSession", "icon": "Calendar", "label": "Book" },
+        { "name": "FoodBasket", "icon": "ShoppingBasket", "label": "Organic" },
+        { "name": "Profile", "icon": "User", "label": "Profile" }
+      ],
+      "trainer": [
+        { "name": "Home", "icon": "Activity", "label": "Slots" },
+        { "name": "Attendance", "icon": "CheckSquare", "label": "Mark" },
+        { "name": "Students", "icon": "Users", "label": "Students" },
+        { "name": "Profile", "icon": "User", "label": "Profile" }
+      ],
+      "manager": [
+        { "name": "Dashboard", "icon": "BarChart2", "label": "Stats" },
+        { "name": "Residents", "icon": "Users", "label": "Residents" },
+        { "name": "Inventory", "icon": "Package", "label": "Stock" },
+        { "name": "Payments", "icon": "CreditCard", "label": "Dues" }
+      ],
+      "admin": [
+        { "name": "Dashboard", "icon": "LayoutDashboard", "label": "Admin" }
+      ]
+    }
+  },
+  "universal_guidelines": {
+    "react_native_specifics": [
+      "Use `SafeAreaView` from `react-native-safe-area-context` for all screens.",
+      "Avoid `View` with hardcoded heights; use flexbox.",
+      "Use `TouchableOpacity` or `Pressable` for interactions with `activeOpacity={0.7}`.",
+      "Images must have `resizeMode='cover'` for backgrounds.",
+      "Use `KeyboardAvoidingView` for forms."
+    ],
+    "accessibility": [
+      "Minimum touch target 44x44dp.",
+      "Contrast ratio > 4.5:1 (already handled by palette).",
+      "Use `accessibilityLabel` on all icon buttons."
+    ],
+    "indian_context": {
+      "currency": "₹",
+      "currency_format": "en-IN",
+      "date_format": "DD MMM YYYY",
+      "integrations": ["WhatsApp Deep Link (wa.me)"]
+    }
+  }
+}
