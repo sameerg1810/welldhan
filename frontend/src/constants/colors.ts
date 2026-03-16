@@ -1,0 +1,46 @@
+export const COLORS = {
+  primary: '#1a4d2e',
+  primaryDark: '#143d23',
+  secondary: '#2d7a47',
+  accent: '#4ade80',
+  accentGlow: 'rgba(74, 222, 128, 0.3)',
+  background: '#0f1117',
+  surface: '#1a1a2e',
+  surfaceHighlight: '#232338',
+  card: '#1a1a2e',
+  cardBorder: 'rgba(255, 255, 255, 0.08)',
+  error: '#ef4444',
+  success: '#22c55e',
+  warning: '#f59e0b',
+  info: '#3b82f6',
+  white: '#ffffff',
+  textPrimary: '#ffffff',
+  textSecondary: '#9ca3af',
+  textMuted: '#6b7280',
+  textAccent: '#4ade80',
+  border: 'rgba(255, 255, 255, 0.1)',
+  inputBg: 'rgba(255, 255, 255, 0.05)',
+  glass: 'rgba(26, 26, 46, 0.7)',
+  green: '#25D366',
+  whatsapp: '#25D366',
+  upi: '#097939',
+  overlay: 'rgba(0,0,0,0.6)',
+};
+
+export const SPORT_COLORS: Record<string, string> = {
+  Badminton: '#4ade80',
+  Karate: '#f59e0b',
+  Yoga: '#a78bfa',
+  Swimming: '#38bdf8',
+};
+
+export const STATUS_COLORS: Record<string, string> = {
+  Confirmed: '#3b82f6',
+  Attended: '#22c55e',
+  NoShow: '#ef4444',
+  Cancelled: '#6b7280',
+  Scheduled: '#3b82f6',
+  Delivered: '#22c55e',
+  Missed: '#ef4444',
+  Skipped: '#6b7280',
+};
