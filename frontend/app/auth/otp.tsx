@@ -12,7 +12,13 @@ const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function OTPScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ phone: string; maskedEmail: string; devOtp: string }>();
+  const params = useLocalSearchParams<{
+    phone?: string;
+    maskedEmail?: string;
+    challengeId?: string;
+    maskedPhone?: string;
+    devOtp?: string;
+  }>();
   const { setAuth } = useAuthStore();
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,11 +44,15 @@ export default function OTPScreen() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: params.phone, otp }),
-      });
+      const isSms2fa = Boolean(params.challengeId);
+      const res = await fetch(
+        isSms2fa ? `${BASE_URL}/api/2fa/sms/verify-otp` : `${BASE_URL}/api/auth/verify-otp`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(isSms2fa ? { challenge_id: params.challengeId, otp } : { phone: params.phone, otp }),
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Verification failed');
 
@@ -62,23 +72,33 @@ export default function OTPScreen() {
   const handleResend = async () => {
     setResending(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: params.phone }),
-      });
+      const isSms2fa = Boolean(params.challengeId);
+      const res = await fetch(
+        isSms2fa ? `${BASE_URL}/api/2fa/sms/send-otp` : `${BASE_URL}/api/auth/send-otp`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(isSms2fa ? { challenge_id: params.challengeId } : { phone: params.phone }),
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Failed');
       setCountdown(60);
       setOtp('');
       if (data.otp_dev) setOtp(data.otp_dev);
-      Alert.alert('OTP Sent', `New OTP sent to ${params.maskedEmail}`);
+      const where = isSms2fa ? (params.maskedPhone || 'your phone') : (params.maskedEmail || 'your email');
+      Alert.alert('OTP Sent', `New OTP sent to ${where}`);
     } catch (err: any) {
       Alert.alert('Error', err.message);
     } finally {
       setResending(false);
     }
   };
+
+  const subtitleLabel = 'OTP sent to';
+  const subtitleValue = params.challengeId
+    ? (params.maskedPhone || 'your phone')
+    : (params.maskedEmail || 'your email');
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -92,8 +112,8 @@ export default function OTPScreen() {
             <View style={styles.header}>
               <Text style={styles.title}>Verify OTP</Text>
               <Text style={styles.subtitle}>
-                OTP sent to{'\n'}
-                <Text style={styles.email}>{params.maskedEmail}</Text>
+                {subtitleLabel}{'\n'}
+                <Text style={styles.email}>{subtitleValue}</Text>
               </Text>
               {params.devOtp ? (
                 <View style={styles.devBadge}>

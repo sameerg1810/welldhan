@@ -2,9 +2,9 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
-import os, logging, uuid, random, string, smtplib, asyncio
+import os, logging, uuid, random, string, smtplib, asyncio, hmac, hashlib
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
@@ -12,6 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from jose import jwt, JWTError
 from concurrent.futures import ThreadPoolExecutor
 from passlib.context import CryptContext
+import requests
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -32,6 +33,11 @@ DB_NAME = os.environ.get('DB_NAME', 'welldhan_db')
 JWT_SECRET = os.environ.get('JWT_SECRET', 'welldhan-secret-key')
 GMAIL_USER = os.environ.get('GMAIL_USER', '')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
+OTP_HMAC_SECRET = os.environ.get('OTP_HMAC_SECRET', JWT_SECRET)
+
+TWOFACTOR_API_KEY = os.environ.get('TWOFACTOR_API_KEY', '')
+TWOFACTOR_OTP_TEMPLATE = os.environ.get('TWOFACTOR_OTP_TEMPLATE', '')  # 2Factor "Template Name"
+TWOFACTOR_OTP_SENDER = os.environ.get('TWOFACTOR_OTP_SENDER', '')  # optional, some routes require it
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRE_DAYS = 30
 
@@ -54,6 +60,19 @@ def new_id() -> str:
 def gen_otp() -> str:
     return ''.join(random.choices(string.digits, k=6))
 
+def mask_phone(phone: str) -> str:
+    digits = ''.join([c for c in phone if c.isdigit()])
+    if len(digits) < 6:
+        return '***'
+    return f"{digits[:2]}******{digits[-2:]}"
+
+def normalize_phone(phone: str) -> str:
+    return phone.strip().replace('+91', '').replace(' ', '').replace('-', '')
+
+def otp_hmac(challenge_id: str, phone: str, otp: str) -> str:
+    msg = f"{challenge_id}|{normalize_phone(phone)}|{otp.strip()}".encode('utf-8')
+    return hmac.new(OTP_HMAC_SECRET.encode('utf-8'), msg, hashlib.sha256).hexdigest()
+
 def create_token(sub: str, role: str) -> str:
     payload = {
         'sub': sub, 'role': role,
@@ -72,6 +91,13 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
         return decode_token(authorization.split(' ')[1])
     except JWTError:
         raise HTTPException(401, 'Invalid token')
+
+def require_roles(*roles: str):
+    async def _dep(current_user: dict = Depends(get_current_user)) -> dict:
+        if current_user.get('role') not in roles:
+            raise HTTPException(403, 'Forbidden')
+        return current_user
+    return _dep
 
 async def send_otp_email(to_email: str, otp: str) -> bool:
     if not GMAIL_USER or not GMAIL_APP_PASSWORD:
@@ -96,6 +122,36 @@ async def send_otp_email(to_email: str, otp: str) -> bool:
     await loop.run_in_executor(ThreadPoolExecutor(max_workers=1), _send)
     return True
 
+async def send_otp_sms_2factor(to_phone: str, otp: str) -> bool:
+    """
+    Transactional SMS (OTP route). Uses 2Factor.in if configured.
+    In dev mode (no API key), logs OTP to server output and returns False.
+    """
+    phone = normalize_phone(to_phone)
+    if not TWOFACTOR_API_KEY or not TWOFACTOR_OTP_TEMPLATE:
+        logger.info(f"[DEV MODE] SMS OTP for {phone}: {otp}")
+        return False
+
+    url = f"https://2factor.in/API/V1/{TWOFACTOR_API_KEY}/SMS/{phone}/{otp}/{TWOFACTOR_OTP_TEMPLATE}"
+    if TWOFACTOR_OTP_SENDER:
+        url = url + f"?From={TWOFACTOR_OTP_SENDER}"
+
+    def _send():
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        if str(data.get('Status', '')).lower() != 'success':
+            raise RuntimeError(f"2Factor send failed: {data}")
+        return True
+
+    loop = asyncio.get_event_loop()
+    try:
+        await loop.run_in_executor(ThreadPoolExecutor(max_workers=1), _send)
+        return True
+    except Exception as e:
+        logger.exception(f"2Factor SMS send error: {e}")
+        return False
+
 def strip_id(doc: dict) -> dict:
     doc.pop('_id', None)
     doc.pop('password_hash', None)
@@ -108,6 +164,13 @@ class SendOTPReq(BaseModel):
 
 class VerifyOTPReq(BaseModel):
     phone: str
+    otp: str
+
+class Send2FASmsOtpReq(BaseModel):
+    challenge_id: str
+
+class Verify2FASmsOtpReq(BaseModel):
+    challenge_id: str
     otp: str
 
 class BookingCreate(BaseModel):
@@ -153,50 +216,151 @@ class SignupRequest(BaseModel):
     phone: str
     flat_number: str
 
-# ─── Auth Routes (Email + Password) ──────────────────────────────────────────
+# ─── Auth Routes (Email + Password + SMS 2FA) ───────────────────────────────
 
 @api_router.post('/auth/login')
 async def login(req: LoginRequest):
     email = req.email.strip().lower()
     password = req.password
 
+    # Resolve role by email (Admin/Trainer/Manager/User)
+    role = None
+    user_id = None
+    user_doc = None
+    phone = None
+
     # Admin
     admin = await db.admin_users.find_one({'email': email})
     if admin:
         if not verify_password(password, admin.get('password_hash', '')):
             raise HTTPException(401, 'Invalid email or password')
-        return {'token': create_token(admin['id'], 'Admin'), 'role': 'Admin',
-                'user_id': admin['id'], 'user_data': strip_id(admin)}
+        role = 'Admin'; user_id = admin['id']; user_doc = admin; phone = admin.get('phone', '')
 
     # Trainer
-    trainer = await db.trainers.find_one({'email': email})
-    if trainer:
-        if not verify_password(password, trainer.get('password_hash', '')):
-            raise HTTPException(401, 'Invalid email or password')
-        return {'token': create_token(trainer['id'], 'Trainer'), 'role': 'Trainer',
-                'user_id': trainer['id'], 'user_data': strip_id(trainer)}
+    if not role:
+        trainer = await db.trainers.find_one({'email': email})
+        if trainer:
+            if not verify_password(password, trainer.get('password_hash', '')):
+                raise HTTPException(401, 'Invalid email or password')
+            role = 'Trainer'; user_id = trainer['id']; user_doc = trainer; phone = trainer.get('phone', '')
 
     # Manager (community)
-    community = await db.communities.find_one({'manager_email': email})
-    if community:
-        if not verify_password(password, community.get('password_hash', '')):
-            raise HTTPException(401, 'Invalid email or password')
-        return {'token': create_token(community['id'], 'Manager'), 'role': 'Manager',
-                'user_id': community['id'], 'user_data': strip_id(community)}
+    if not role:
+        community = await db.communities.find_one({'manager_email': email})
+        if community:
+            if not verify_password(password, community.get('password_hash', '')):
+                raise HTTPException(401, 'Invalid email or password')
+            role = 'Manager'; user_id = community['id']; user_doc = community; phone = community.get('manager_phone', '')
 
     # Household (User)
-    household = await db.households.find_one({'primary_email': email})
-    if household:
-        if not verify_password(password, household.get('password_hash', '')):
-            raise HTTPException(401, 'Invalid email or password')
-        pkg = await db.packages.find_one({'id': household.get('package_id', '')})
-        comm = await db.communities.find_one({'id': household.get('community_id', '')})
-        household['package'] = strip_id(pkg) if pkg else None
-        household['community'] = strip_id(comm) if comm else None
-        return {'token': create_token(household['id'], 'User'), 'role': 'User',
-                'user_id': household['id'], 'user_data': strip_id(household)}
+    if not role:
+        household = await db.households.find_one({'primary_email': email})
+        if household:
+            if not verify_password(password, household.get('password_hash', '')):
+                raise HTTPException(401, 'Invalid email or password')
+            role = 'User'; user_id = household['id']; user_doc = household; phone = household.get('primary_phone', '')
 
-    raise HTTPException(401, 'No account found with this email address')
+    if not role or not user_id or not user_doc:
+        raise HTTPException(401, 'No account found with this email address')
+
+    if not phone:
+        raise HTTPException(400, 'No phone number registered for this account')
+
+    # Start SMS 2FA challenge (transactional SMS OTP)
+    challenge_id = new_id()
+    otp = gen_otp()
+    await db.sms_otp_challenges.insert_one({
+        'id': challenge_id,
+        'phone': normalize_phone(phone),
+        'role': role,
+        'user_id': user_id,
+        'otp_hash': otp_hmac(challenge_id, phone, otp),
+        'expires_at': datetime.now(UTC) + timedelta(minutes=10),
+        'attempts': 0,
+        'used': False,
+        'created_at': datetime.now(UTC),
+    })
+
+    sms_sent = await send_otp_sms_2factor(phone, otp)
+    resp = {
+        'requires_2fa': True,
+        'challenge_id': challenge_id,
+        'masked_phone': mask_phone(phone),
+        'sms_sent': sms_sent,
+        'role': role,
+    }
+    if not TWOFACTOR_API_KEY:
+        resp['otp_dev'] = otp
+    return resp
+
+@api_router.post('/2fa/sms/send-otp')
+async def send_2fa_sms_otp(req: Send2FASmsOtpReq):
+    """
+    Resend SMS OTP for an existing challenge (transactional route).
+    """
+    ch = await db.sms_otp_challenges.find_one({'id': req.challenge_id, 'used': False})
+    if not ch:
+        raise HTTPException(404, 'No active 2FA challenge. Please login again.')
+    if datetime.now(UTC) > ch['expires_at'].replace(tzinfo=UTC):
+        raise HTTPException(400, 'Challenge expired. Please login again.')
+
+    otp = gen_otp()
+    await db.sms_otp_challenges.update_one({'_id': ch['_id']}, {'$set': {
+        'otp_hash': otp_hmac(ch['id'], ch['phone'], otp),
+        'expires_at': datetime.now(UTC) + timedelta(minutes=10),
+        'attempts': 0,
+        'created_at': datetime.now(UTC),
+    }})
+
+    sms_sent = await send_otp_sms_2factor(ch['phone'], otp)
+    resp = {'success': True, 'challenge_id': ch['id'], 'masked_phone': mask_phone(ch['phone']), 'sms_sent': sms_sent}
+    if not TWOFACTOR_API_KEY:
+        resp['otp_dev'] = otp
+    return resp
+
+@api_router.post('/2fa/sms/verify-otp')
+async def verify_2fa_sms_otp(req: Verify2FASmsOtpReq):
+    ch = await db.sms_otp_challenges.find_one({'id': req.challenge_id, 'used': False})
+    if not ch:
+        raise HTTPException(400, 'No active 2FA challenge. Please login again.')
+    if datetime.now(UTC) > ch['expires_at'].replace(tzinfo=UTC):
+        raise HTTPException(400, 'OTP has expired. Please login again.')
+
+    if ch.get('attempts', 0) >= 5:
+        raise HTTPException(429, 'Too many attempts. Please login again.')
+
+    expected = ch.get('otp_hash', '')
+    got = otp_hmac(ch['id'], ch['phone'], req.otp)
+    if not hmac.compare_digest(expected, got):
+        await db.sms_otp_challenges.update_one({'_id': ch['_id']}, {'$inc': {'attempts': 1}})
+        raise HTTPException(400, 'Invalid OTP. Please try again.')
+
+    await db.sms_otp_challenges.update_one({'_id': ch['_id']}, {'$set': {'used': True}})
+
+    role = ch['role']
+    user_id = ch['user_id']
+    token = create_token(user_id, role)
+
+    user_data = None
+    if role == 'User':
+        hh = await db.households.find_one({'id': user_id})
+        if hh:
+            pkg = await db.packages.find_one({'id': hh.get('package_id', '')})
+            comm = await db.communities.find_one({'id': hh.get('community_id', '')})
+            hh['package'] = strip_id(pkg) if pkg else None
+            hh['community'] = strip_id(comm) if comm else None
+            user_data = strip_id(hh)
+    elif role == 'Trainer':
+        t = await db.trainers.find_one({'id': user_id})
+        if t: user_data = strip_id(t)
+    elif role == 'Manager':
+        c = await db.communities.find_one({'id': user_id})
+        if c: user_data = strip_id(c)
+    elif role == 'Admin':
+        a = await db.admin_users.find_one({'id': user_id})
+        if a: user_data = strip_id(a)
+
+    return {'token': token, 'role': role, 'user_id': user_id, 'user_data': user_data}
 
 @api_router.post('/auth/signup')
 async def signup(req: SignupRequest):
@@ -286,30 +450,30 @@ async def add_passwords_to_existing():
 async def send_otp(req: SendOTPReq):
     phone = req.phone.strip().replace('+91', '').replace(' ', '').replace('-', '')
 
-    user_type = None; user_id = None; email = None; name = None
+    user_type = None; user_id = None; email = None
 
     trainer = await db.trainers.find_one({'phone': phone})
     if trainer:
         user_type = 'Trainer'; user_id = trainer['id']
-        email = trainer.get('email'); name = trainer.get('name')
+        email = trainer.get('email')
 
     if not user_type:
         community = await db.communities.find_one({'manager_phone': phone})
         if community:
             user_type = 'Manager'; user_id = community['id']
-            email = community.get('manager_email'); name = community.get('manager_name')
+            email = community.get('manager_email')
 
     if not user_type:
         admin = await db.admin_users.find_one({'phone': phone})
         if admin:
             user_type = 'Admin'; user_id = admin['id']
-            email = admin.get('email'); name = admin.get('name')
+            email = admin.get('email')
 
     if not user_type:
         household = await db.households.find_one({'primary_phone': phone})
         if household:
             user_type = 'User'; user_id = household['id']
-            email = household.get('primary_email'); name = household.get('primary_name')
+            email = household.get('primary_email')
 
     if not user_type:
         raise HTTPException(404, 'Phone number not registered with WELLDHAN')
@@ -617,20 +781,20 @@ async def get_payments(current_user: dict = Depends(get_current_user)):
 # ─── Trainer Routes ───────────────────────────────────────────────────────────
 
 @api_router.get('/trainer/profile')
-async def get_trainer_profile(current_user: dict = Depends(get_current_user)):
+async def get_trainer_profile(current_user: dict = Depends(require_roles('Trainer'))):
     trainer_id = current_user['sub']
     t = await db.trainers.find_one({'id': trainer_id})
     if not t: raise HTTPException(404, 'Trainer not found')
     return strip_id(t)
 
 @api_router.get('/trainer/slots')
-async def get_trainer_slots(current_user: dict = Depends(get_current_user)):
+async def get_trainer_slots(current_user: dict = Depends(require_roles('Trainer'))):
     trainer_id = current_user['sub']
     slots = await db.slots.find({'trainer_id': trainer_id}).to_list(20)
     return [strip_id(s) for s in slots]
 
 @api_router.get('/trainer/students')
-async def get_trainer_students(current_user: dict = Depends(get_current_user)):
+async def get_trainer_students(current_user: dict = Depends(require_roles('Trainer'))):
     t = await db.trainers.find_one({'id': current_user['sub']})
     if not t: raise HTTPException(404, 'Trainer not found')
     sport = t.get('sport', '')
@@ -643,7 +807,7 @@ async def get_trainer_students(current_user: dict = Depends(get_current_user)):
     return result
 
 @api_router.get('/trainer/today-bookings')
-async def get_trainer_today_bookings(current_user: dict = Depends(get_current_user)):
+async def get_trainer_today_bookings(current_user: dict = Depends(require_roles('Trainer'))):
     trainer_id = current_user['sub']
     today = datetime.now(UTC).strftime('%Y-%m-%d')
     bookings = await db.bookings.find({'trainer_id': trainer_id, 'session_date': today}).to_list(50)
@@ -661,7 +825,7 @@ async def get_trainer_today_bookings(current_user: dict = Depends(get_current_us
 # ─── Manager Routes ───────────────────────────────────────────────────────────
 
 @api_router.get('/manager/summary')
-async def manager_summary(current_user: dict = Depends(get_current_user)):
+async def manager_summary(current_user: dict = Depends(require_roles('Manager'))):
     community_id = current_user['sub']
     total = await db.households.count_documents({'community_id': community_id})
     active = await db.households.count_documents({'community_id': community_id, 'is_active': True})
@@ -684,7 +848,7 @@ async def manager_summary(current_user: dict = Depends(get_current_user)):
     }
 
 @api_router.get('/manager/households')
-async def manager_households(search: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+async def manager_households(search: Optional[str] = None, current_user: dict = Depends(require_roles('Manager'))):
     community_id = current_user['sub']
     query: Dict[str, Any] = {'community_id': community_id}
     if search:
@@ -701,7 +865,7 @@ async def manager_households(search: Optional[str] = None, current_user: dict = 
     return result
 
 @api_router.get('/manager/pending-payments')
-async def manager_pending_payments(current_user: dict = Depends(get_current_user)):
+async def manager_pending_payments(current_user: dict = Depends(require_roles('Manager'))):
     payments = await db.payments.find({'is_paid': False}).sort('due_date', 1).to_list(300)
     result = []
     for p in payments:
@@ -711,14 +875,14 @@ async def manager_pending_payments(current_user: dict = Depends(get_current_user
     return result
 
 @api_router.get('/manager/inventory')
-async def manager_inventory(current_user: dict = Depends(get_current_user)):
+async def manager_inventory(current_user: dict = Depends(require_roles('Manager'))):
     items = await db.food_inventory.find({}).to_list(100)
     return [strip_id(i) for i in items]
 
 # ─── Admin Routes ─────────────────────────────────────────────────────────────
 
 @api_router.get('/admin/summary')
-async def admin_summary(current_user: dict = Depends(get_current_user)):
+async def admin_summary(current_user: dict = Depends(require_roles('Admin'))):
     communities = await db.communities.count_documents({})
     total_families = await db.households.count_documents({})
     active_trainers = await db.trainers.count_documents({'is_active': True})
@@ -744,17 +908,17 @@ async def admin_summary(current_user: dict = Depends(get_current_user)):
     }
 
 @api_router.get('/admin/communities')
-async def admin_communities(current_user: dict = Depends(get_current_user)):
+async def admin_communities(current_user: dict = Depends(require_roles('Admin'))):
     items = await db.communities.find({}).to_list(50)
     return [strip_id(i) for i in items]
 
 @api_router.get('/admin/trainers')
-async def admin_trainers(current_user: dict = Depends(get_current_user)):
+async def admin_trainers(current_user: dict = Depends(require_roles('Admin'))):
     items = await db.trainers.find({}).to_list(100)
     return [strip_id(i) for i in items]
 
 @api_router.get('/admin/packages')
-async def admin_packages(current_user: dict = Depends(get_current_user)):
+async def admin_packages(current_user: dict = Depends(require_roles('Admin'))):
     items = await db.packages.find({}).to_list(50)
     return [strip_id(i) for i in items]
 
