@@ -56,7 +56,8 @@
           "color": "#1a4d2e",
           "sounds": []
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

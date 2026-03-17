@@ -11,6 +11,18 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jose import jwt, JWTError
 from concurrent.futures import ThreadPoolExecutor
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain: str, hashed: str) -> bool:
+    try:
+        return pwd_context.verify(plain, hashed)
+    except Exception:
+        return False
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -86,6 +98,7 @@ async def send_otp_email(to_email: str, otp: str) -> bool:
 
 def strip_id(doc: dict) -> dict:
     doc.pop('_id', None)
+    doc.pop('password_hash', None)
     return doc
 
 # ─── Models ───────────────────────────────────────────────────────────────────
@@ -128,7 +141,146 @@ class HouseholdUpdate(BaseModel):
     primary_name: Optional[str] = None
     primary_email: Optional[str] = None
 
-# ─── Auth Routes ──────────────────────────────────────────────────────────────
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class SignupRequest(BaseModel):
+    full_name: str
+    email: str
+    password: str
+    confirm_password: str
+    phone: str
+    flat_number: str
+
+# ─── Auth Routes (Email + Password) ──────────────────────────────────────────
+
+@api_router.post('/auth/login')
+async def login(req: LoginRequest):
+    email = req.email.strip().lower()
+    password = req.password
+
+    # Admin
+    admin = await db.admin_users.find_one({'email': email})
+    if admin:
+        if not verify_password(password, admin.get('password_hash', '')):
+            raise HTTPException(401, 'Invalid email or password')
+        return {'token': create_token(admin['id'], 'Admin'), 'role': 'Admin',
+                'user_id': admin['id'], 'user_data': strip_id(admin)}
+
+    # Trainer
+    trainer = await db.trainers.find_one({'email': email})
+    if trainer:
+        if not verify_password(password, trainer.get('password_hash', '')):
+            raise HTTPException(401, 'Invalid email or password')
+        return {'token': create_token(trainer['id'], 'Trainer'), 'role': 'Trainer',
+                'user_id': trainer['id'], 'user_data': strip_id(trainer)}
+
+    # Manager (community)
+    community = await db.communities.find_one({'manager_email': email})
+    if community:
+        if not verify_password(password, community.get('password_hash', '')):
+            raise HTTPException(401, 'Invalid email or password')
+        return {'token': create_token(community['id'], 'Manager'), 'role': 'Manager',
+                'user_id': community['id'], 'user_data': strip_id(community)}
+
+    # Household (User)
+    household = await db.households.find_one({'primary_email': email})
+    if household:
+        if not verify_password(password, household.get('password_hash', '')):
+            raise HTTPException(401, 'Invalid email or password')
+        pkg = await db.packages.find_one({'id': household.get('package_id', '')})
+        comm = await db.communities.find_one({'id': household.get('community_id', '')})
+        household['package'] = strip_id(pkg) if pkg else None
+        household['community'] = strip_id(comm) if comm else None
+        return {'token': create_token(household['id'], 'User'), 'role': 'User',
+                'user_id': household['id'], 'user_data': strip_id(household)}
+
+    raise HTTPException(401, 'No account found with this email address')
+
+@api_router.post('/auth/signup')
+async def signup(req: SignupRequest):
+    email = req.email.strip().lower()
+    if req.password != req.confirm_password:
+        raise HTTPException(400, 'Passwords do not match')
+    if len(req.password) < 6:
+        raise HTTPException(400, 'Password must be at least 6 characters')
+    if not req.full_name.strip():
+        raise HTTPException(400, 'Full name is required')
+
+    existing = await db.households.find_one({'primary_email': email})
+    if existing:
+        raise HTTPException(400, 'An account with this email already exists')
+
+    community = await db.communities.find_one({})
+    if not community:
+        raise HTTPException(500, 'No community configured. Please contact admin.')
+
+    package = await db.packages.find_one({'name': 'Sport Basic', 'is_active': True})
+    if not package:
+        package = await db.packages.find_one({'is_active': True})
+
+    hh_id = new_id()
+    household = {
+        'id': hh_id,
+        'community_id': community['id'],
+        'flat_number': req.flat_number.strip().upper(),
+        'primary_name': req.full_name.strip(),
+        'primary_phone': req.phone.strip().replace('+91', '').replace(' ', ''),
+        'primary_email': email,
+        'package_id': package['id'],
+        'plan_type': 'Individual',
+        'total_members': 1,
+        'is_active': True,
+        'food_plan_active': False,
+        'join_date': datetime.now(UTC).strftime('%Y-%m-%d'),
+        'fcm_token': '',
+        'password_hash': hash_password(req.password),
+    }
+    await db.households.insert_one(household)
+
+    await db.members.insert_one({
+        'id': new_id(), 'household_id': hh_id,
+        'member_name': req.full_name.strip(), 'age': 25,
+        'relation': 'Self', 'is_primary': True,
+        'assigned_sport': 'Badminton', 'is_active': True,
+        'phone': household['primary_phone'],
+    })
+
+    hh_clean = dict(household)
+    hh_clean.pop('_id', None)
+    hh_clean.pop('password_hash', None)
+    hh_clean['package'] = strip_id(dict(package))
+    hh_clean['community'] = strip_id(dict(community))
+
+    return {'token': create_token(hh_id, 'User'), 'role': 'User',
+            'user_id': hh_id, 'user_data': hh_clean}
+
+@api_router.get('/communities/public')
+async def get_communities_public():
+    items = await db.communities.find({'is_active': True}).to_list(50)
+    return [{'id': i['id'], 'name': i['name'], 'location': i['location']} for i in items]
+
+@api_router.post('/seed/add-passwords')
+async def add_passwords_to_existing():
+    """Migration: add password_hash to existing seeded records"""
+    default_hash = hash_password('Welldhan@123')
+    updated = {}
+
+    r = await db.admin_users.update_many({'password_hash': {'$exists': False}}, {'$set': {'password_hash': default_hash}})
+    updated['admin_users'] = r.modified_count
+    r = await db.trainers.update_many({'password_hash': {'$exists': False}}, {'$set': {'password_hash': default_hash}})
+    updated['trainers'] = r.modified_count
+    r = await db.communities.update_many({'password_hash': {'$exists': False}}, {'$set': {'password_hash': default_hash}})
+    updated['communities'] = r.modified_count
+    r = await db.households.update_many({'password_hash': {'$exists': False}}, {'$set': {'password_hash': default_hash}})
+    updated['households'] = r.modified_count
+
+    return {'success': True, 'updated': updated,
+            'default_password': 'Welldhan@123',
+            'message': 'All existing accounts now have password: Welldhan@123'}
+
+# ─── Auth Routes (Legacy OTP) ─────────────────────────────────────────────────
 
 @api_router.post('/auth/send-otp')
 async def send_otp(req: SendOTPReq):
