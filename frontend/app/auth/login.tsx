@@ -187,6 +187,15 @@ export default function LoginScreen() {
                   <Text style={styles.hint}>
                     💡 You’ll receive an OTP on your registered phone (SMS 2FA)
                   </Text>
+
+                  <TouchableOpacity
+                    style={styles.linkBtn}
+                    onPress={() => router.push('/auth/register')}
+                    testID="go-register-btn"
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.linkText}>Create a new account</Text>
+                  </TouchableOpacity>
                 </>
               ) : (
                 <>
@@ -228,6 +237,15 @@ export default function LoginScreen() {
                   <Text style={styles.hint}>
                     💡 OTP will be sent to your registered email address (legacy)
                   </Text>
+
+                  <TouchableOpacity
+                    style={styles.linkBtn}
+                    onPress={() => router.push('/auth/register')}
+                    testID="go-register-btn-legacy"
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.linkText}>Create a new account</Text>
+                  </TouchableOpacity>
                 </>
               )}
             </View>
@@ -271,6 +289,8 @@ const styles = StyleSheet.create({
   },
   modeText: { color: COLORS.textMuted, fontSize: 14, fontWeight: '700' },
   modeTextActive: { color: COLORS.accent },
+  linkBtn: { alignItems: 'center', marginTop: 4 },
+  linkText: { color: COLORS.accent, fontSize: 14, fontWeight: '700', textDecorationLine: 'underline' },
   form: { gap: 16 },
   label: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
   inputRow: {

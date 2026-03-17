@@ -48,6 +48,7 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="auth/login" />
             <Stack.Screen name="auth/otp" />
+            <Stack.Screen name="auth/register" />
             <Stack.Screen name="(user)" />
             <Stack.Screen name="(trainer)" />
             <Stack.Screen name="(manager)" />
