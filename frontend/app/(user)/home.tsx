@@ -11,6 +11,10 @@ import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
 import { api } from '../../src/api/client';
 import { getGreeting, getSportIcon, formatDate } from '../../src/utils';
 import { Household, Member, Booking } from '../../src/types';
+import { getMyHousehold } from '../../src/api/households';
+import { getUpcomingBookings } from '../../src/api/bookings';
+import { getCurrentPayment } from '../../src/api/payments';
+import { getMyFoodPreferences } from '../../src/api/food';
 
 export default function UserHome() {
   const router = useRouter();
@@ -19,28 +23,32 @@ export default function UserHome() {
 
   const [members, setMembers] = useState<Member[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [streak, setStreak] = useState(0);
+  const [currentPayment, setCurrentPayment] = useState<any>(null);
+  const [foodPrefsCount, setFoodPrefsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => {
     try {
-      const [m, b, s] = await Promise.all([
-        api.get<Member[]>('/members'),
-        api.get<Booking[]>('/bookings'),
-        api.get<{ streak: number }>('/streak'),
+      const [hh, upcoming, pay, prefs] = await Promise.all([
+        getMyHousehold() as any,
+        getUpcomingBookings() as any,
+        getCurrentPayment() as any,
+        getMyFoodPreferences().catch(() => []) as any,
       ]);
-      setMembers(m);
-      setBookings(b.filter(bk => bk.status === 'Confirmed' || bk.status === 'Attended'));
-      setStreak(s.streak);
+      // keep authStore household in sync if possible
+      if (hh?.members) setMembers(hh.members);
+      else if (Array.isArray(hh?.members) === false) setMembers([]);
+      setBookings(Array.isArray(upcoming) ? upcoming : []);
+      setCurrentPayment(pay || null);
+      setFoodPrefsCount(Array.isArray(prefs) ? prefs.filter((p: any) => p.is_selected).length : 0);
     } catch (e) { console.error(e); }
     finally { setLoading(false); setRefreshing(false); }
   };
 
   useEffect(() => { load(); }, []);
 
-  const upcoming = bookings.filter(b => b.status === 'Confirmed')[0];
-  const today = new Date().toISOString().split('T')[0];
+  const upcoming = bookings[0];
 
   const openWhatsApp = () => {
     if (!household?.community?.manager_phone) return;
@@ -72,11 +80,12 @@ export default function UserHome() {
             </TouchableOpacity>
           </View>
 
-          {/* Streak */}
-          <View style={styles.streakBanner} testID="streak-banner">
-            <Text style={styles.streakFire}>🔥</Text>
-            <Text style={styles.streakText}>{streak} day streak</Text>
-            <Text style={styles.streakSub}> · Keep it up!</Text>
+          {/* Snapshot */}
+          <View style={styles.streakBanner} testID="snapshot-banner">
+            <Text style={styles.streakFire}>📌</Text>
+            <Text style={styles.streakText}>
+              {currentPayment?.is_paid ? 'Paid' : 'Due'} · {foodPrefsCount} food items
+            </Text>
           </View>
 
           {/* Today's Session */}

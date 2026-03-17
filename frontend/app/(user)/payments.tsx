@@ -1,24 +1,38 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, Alert, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { COLORS } from '../../src/constants/colors';
 import { formatCurrency, formatDate } from '../../src/utils';
 import { Payment } from '../../src/types';
 import { useAuthStore } from '../../src/store/authStore';
 import { Household } from '../../src/types';
+import { getMyPayments, markPaymentPaid } from '../../src/api/payments';
 
 export default function PaymentsScreen() {
   const { userData } = useAuthStore();
   const household = userData as Household;
+  const qc = useQueryClient();
+  const [markModal, setMarkModal] = useState(false);
+  const [markForm, setMarkForm] = useState({ payment_id: '', upi_transaction_id: '', payer_upi_id: '', payment_method: 'GPay' });
 
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ['payments'],
-    queryFn: () => api.get<Payment[]>('/payments'),
+    queryFn: () => getMyPayments() as any,
   });
 
   const current = payments[0];
+
+  const { mutate: markPaid, isPending: marking } = useMutation({
+    mutationFn: (data: any) => markPaymentPaid(data) as any,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      setMarkModal(false);
+      Alert.alert('✅ Updated', 'Payment marked as paid.');
+    },
+    onError: (e: any) => Alert.alert('Error', e.message),
+  });
 
   const openUPI = (amount: number, monthYear: string) => {
     const upiUrl = `upi://pay?pa=welldhan@okicici&pn=WELLDHAN&am=${amount}&cu=INR&tn=WELLDHAN+${monthYear.replace(/ /g, '+')}`;
@@ -68,6 +82,17 @@ export default function PaymentsScreen() {
                     >
                       <Text style={styles.gpayText}>💳 Pay via GPay</Text>
                     </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.markPaidBtn}
+                    onPress={() => {
+                      setMarkForm((f) => ({ ...f, payment_id: current.id }));
+                      setMarkModal(true);
+                    }}
+                    testID="mark-paid-btn"
+                  >
+                    <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.accent} />
+                    <Text style={styles.markPaidText}>Mark as Paid</Text>
+                  </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.shareBtn}
                       onPress={() => shareWhatsApp(current.amount_due, current.month_year)}
@@ -118,6 +143,52 @@ export default function PaymentsScreen() {
           <View style={{ height: 24 }} />
         </ScrollView>
       </SafeAreaView>
+
+      <Modal visible={markModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Mark Payment as Paid</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="UPI Transaction ID"
+              placeholderTextColor={COLORS.textMuted}
+              value={markForm.upi_transaction_id}
+              onChangeText={(v) => setMarkForm((f) => ({ ...f, upi_transaction_id: v }))}
+              testID="upi-txn-input"
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Your UPI ID (payer)"
+              placeholderTextColor={COLORS.textMuted}
+              value={markForm.payer_upi_id}
+              onChangeText={(v) => setMarkForm((f) => ({ ...f, payer_upi_id: v }))}
+              testID="payer-upi-input"
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Payment Method (GPay/PhonePe/Paytm/BHIM/Cash)"
+              placeholderTextColor={COLORS.textMuted}
+              value={markForm.payment_method}
+              onChangeText={(v) => setMarkForm((f) => ({ ...f, payment_method: v }))}
+              testID="payment-method-input"
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setMarkModal(false)} testID="cancel-mark-paid">
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirm}
+                disabled={marking || !markForm.payment_id || !markForm.upi_transaction_id || !markForm.payer_upi_id || !markForm.payment_method}
+                onPress={() => markPaid(markForm)}
+                testID="confirm-mark-paid"
+              >
+                {marking ? <ActivityIndicator color={COLORS.primaryDark} /> : <Text style={styles.modalConfirmText}>Save</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -146,6 +217,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(37,211,102,0.3)',
   },
   shareText: { color: COLORS.green, fontSize: 14, fontWeight: '700' },
+  markPaidBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: 'rgba(74,222,128,0.08)', paddingVertical: 12, borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(74,222,128,0.25)',
+  },
+  markPaidText: { color: COLORS.accent, fontSize: 14, fontWeight: '800' },
   upiCard: {
     marginHorizontal: 20, backgroundColor: COLORS.card, borderRadius: 14, padding: 16,
     marginBottom: 20, borderWidth: 1, borderColor: COLORS.cardBorder,
@@ -167,4 +244,13 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontWeight: '700' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { color: COLORS.textSecondary, fontSize: 15 },
+  modalOverlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: '#1a1a2e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 12 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 6 },
+  modalInput: { backgroundColor: COLORS.inputBg, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 14, color: COLORS.textPrimary },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
+  modalCancel: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
+  modalCancelText: { color: COLORS.textSecondary, fontWeight: '700' },
+  modalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: COLORS.accent, alignItems: 'center', opacity: 1 },
+  modalConfirmText: { color: COLORS.primaryDark, fontWeight: '900' },
 });

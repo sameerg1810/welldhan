@@ -6,10 +6,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
 import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
 import { getSportIcon, getRelationColor } from '../../src/utils';
 import { Member } from '../../src/types';
+import { addMember as addMemberApi, deleteMember as deleteMemberApi, getMyMembers, updateMember as updateMemberApi } from '../../src/api/households';
 
 const SPORTS = ['Badminton', 'Yoga', 'Karate', 'Swimming'];
 const RELATIONS = ['Self', 'Spouse', 'Child', 'Parent'];
@@ -22,18 +22,24 @@ export default function MembersScreen() {
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['members'],
-    queryFn: () => api.get<Member[]>('/members'),
+    queryFn: () => getMyMembers() as any,
   });
 
   const { mutate: addMember, isPending: adding } = useMutation({
-    mutationFn: (data: any) => api.post('/members', data),
+    mutationFn: (data: any) => addMemberApi(data) as any,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['members'] }); setAddModal(false); resetForm(); },
     onError: (e: any) => Alert.alert('Error', e.message),
   });
 
   const { mutate: updateMember } = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.patch(`/members/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateMemberApi(id, data) as any,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['members'] }); setEditModal(null); },
+    onError: (e: any) => Alert.alert('Error', e.message),
+  });
+
+  const { mutate: softDeleteMember } = useMutation({
+    mutationFn: (id: string) => deleteMemberApi(id) as any,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['members'] }),
     onError: (e: any) => Alert.alert('Error', e.message),
   });
 
@@ -67,9 +73,22 @@ export default function MembersScreen() {
           </View>
         </View>
       </View>
-      <TouchableOpacity onPress={() => setEditModal(m)} testID={`edit-member-${m.id}`}>
-        <Ionicons name="pencil-outline" size={20} color={COLORS.textSecondary} />
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TouchableOpacity onPress={() => setEditModal(m)} testID={`edit-member-${m.id}`}>
+          <Ionicons name="pencil-outline" size={20} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+        {!m.is_primary && (
+          <TouchableOpacity
+            onPress={() => Alert.alert('Remove Member', 'This will deactivate the member.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Remove', style: 'destructive', onPress: () => softDeleteMember(m.id) },
+            ])}
+            testID={`delete-member-${m.id}`}
+          >
+            <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 

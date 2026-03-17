@@ -2,14 +2,14 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, Linking } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
 import { COLORS } from '../../src/constants/colors';
 import { formatCurrency } from '../../src/utils';
+import { getPendingPayments } from '../../src/api/payments';
 
 export default function ManagerPayments() {
   const { data: pending = [], isLoading } = useQuery({
     queryKey: ['pending-payments'],
-    queryFn: () => api.get<any[]>('/manager/pending-payments'),
+    queryFn: () => getPendingPayments() as any,
   });
 
   const total = pending.reduce((s, p) => s + (p.amount_due || 0), 0);

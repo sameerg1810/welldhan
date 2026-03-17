@@ -1,21 +1,36 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, Modal, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { COLORS } from '../../src/constants/colors';
 import { formatCurrency } from '../../src/utils';
 import { FoodInventory } from '../../src/types';
+import { getLowStockItems, updateStock } from '../../src/api/food';
 
 const CATEGORIES = ['All', 'Vegetable', 'Oil', 'Grain', 'Dairy', 'Spice'];
 
 export default function InventoryScreen() {
+  const qc = useQueryClient();
   const [filter, setFilter] = useState('All');
+  const [edit, setEdit] = useState<FoodInventory | null>(null);
+  const [qty, setQty] = useState('');
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['manager-inventory'],
-    queryFn: () => api.get<FoodInventory[]>('/manager/inventory'),
+    queryFn: () => getLowStockItems() as any,
+  });
+
+  const { mutate: saveStock, isPending } = useMutation({
+    mutationFn: ({ id, stock_quantity }: { id: string; stock_quantity: number }) =>
+      updateStock(id, { item_id: id, stock_quantity }) as any,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['manager-inventory'] });
+      setEdit(null);
+      setQty('');
+      Alert.alert('✅ Updated', 'Stock updated');
+    },
+    onError: (e: any) => Alert.alert('Error', e.message),
   });
 
   const filtered = filter === 'All' ? items : items.filter(i => i.category === filter);
@@ -85,6 +100,13 @@ export default function InventoryScreen() {
                     {inv.is_organic && (
                       <Text style={styles.organic}>🌿</Text>
                     )}
+                    <TouchableOpacity
+                      style={styles.editBtn}
+                      onPress={() => { setEdit(inv); setQty(String(inv.stock_quantity)); }}
+                      testID={`edit-stock-${inv.id}`}
+                    >
+                      <Ionicons name="pencil-outline" size={16} color={COLORS.accent} />
+                    </TouchableOpacity>
                   </View>
                 </View>
               );
@@ -92,6 +114,42 @@ export default function InventoryScreen() {
           />
         )}
       </SafeAreaView>
+
+      <Modal visible={!!edit} transparent animationType="slide">
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Update Stock</Text>
+            <Text style={styles.sheetSub}>{edit?.name}</Text>
+            <TextInput
+              style={styles.input}
+              value={qty}
+              onChangeText={setQty}
+              keyboardType="numeric"
+              placeholder="Stock quantity"
+              placeholderTextColor={COLORS.textMuted}
+              testID="stock-qty-input"
+            />
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.cancel} onPress={() => setEdit(null)} testID="cancel-stock">
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.save}
+                onPress={() => {
+                  if (!edit) return;
+                  const num = Number(qty);
+                  if (Number.isNaN(num)) { Alert.alert('Validation', 'Enter a valid number'); return; }
+                  saveStock({ id: edit.id, stock_quantity: num });
+                }}
+                disabled={isPending}
+                testID="save-stock"
+              >
+                <Text style={styles.saveText}>{isPending ? 'Saving...' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -124,4 +182,15 @@ const styles = StyleSheet.create({
   lowBadge: { backgroundColor: 'rgba(239,68,68,0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   lowText: { color: '#ef4444', fontSize: 10, fontWeight: '800' },
   organic: { fontSize: 14 },
+  editBtn: { marginTop: 6, padding: 6, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
+  overlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: 'flex-end' },
+  sheet: { backgroundColor: '#1a1a2e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 10 },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: COLORS.textPrimary },
+  sheetSub: { fontSize: 13, color: COLORS.textSecondary, marginBottom: 4 },
+  input: { backgroundColor: COLORS.inputBg, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 14, color: COLORS.textPrimary },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 6 },
+  cancel: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
+  cancelText: { color: COLORS.textSecondary, fontWeight: '700' },
+  save: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: COLORS.accent, alignItems: 'center' },
+  saveText: { color: COLORS.primaryDark, fontWeight: '900' },
 });

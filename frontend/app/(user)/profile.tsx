@@ -14,6 +14,7 @@ import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
 import { formatCurrency, getInitials } from '../../src/utils';
 import { Household, Member } from '../../src/types';
 import { api } from '../../src/api/client';
+import { getMyMembers, updateMyHousehold } from '../../src/api/households';
 
 const NOTIF_KEY = 'welldhan_notifications_enabled';
 
@@ -41,12 +42,12 @@ export default function ProfileScreen() {
 
   const { data: members = [] } = useQuery({
     queryKey: ['members'],
-    queryFn: () => api.get<Member[]>('/members'),
+    queryFn: () => getMyMembers() as any,
   });
 
   const { mutate: saveProfile, isPending: saving } = useMutation({
     mutationFn: (data: { primary_name?: string; primary_email?: string }) =>
-      api.patch<Household>('/households/me', data),
+      updateMyHousehold(data) as any,
     onSuccess: (updated) => {
       // Merge nested objects back (package, community) from current userData
       const merged = { ...updated, package: household?.package, community: household?.community };

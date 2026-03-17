@@ -6,10 +6,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '../../src/api/client';
 import { COLORS, STATUS_COLORS } from '../../src/constants/colors';
 import { getSportIcon, formatDate } from '../../src/utils';
 import { Booking } from '../../src/types';
+import { cancelBooking as cancelBookingApi, getMyBookings } from '../../src/api/bookings';
 
 const FILTERS = ['Upcoming', 'Past', 'Cancelled'];
 
@@ -19,11 +19,11 @@ export default function MyBookings() {
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ['bookings'],
-    queryFn: () => api.get<Booking[]>('/bookings'),
+    queryFn: () => getMyBookings() as any,
   });
 
   const { mutate: cancelBooking } = useMutation({
-    mutationFn: (id: string) => api.patch(`/bookings/${id}/cancel`, {}),
+    mutationFn: (id: string) => cancelBookingApi(id) as any,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['bookings'] }); },
     onError: (e: any) => Alert.alert('Error', e.message),
   });

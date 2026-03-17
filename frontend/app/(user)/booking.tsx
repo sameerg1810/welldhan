@@ -6,10 +6,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
 import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
 import { getSportIcon, getSpotsColor, getDaysText, getTodayDate } from '../../src/utils';
 import { Slot, Member } from '../../src/types';
+import { getAllSlots, getSlotsBySport } from '../../src/api/slots';
+import { getMyMembers } from '../../src/api/households';
+import { createBooking as createBookingApi } from '../../src/api/bookings';
 
 const SPORTS = ['All', 'Badminton', 'Yoga', 'Karate', 'Swimming'];
 
@@ -17,44 +19,38 @@ export default function BookingScreen() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState('All');
   const [selected, setSelected] = useState<Slot | null>(null);
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [sessionDate, setSessionDate] = useState(getTodayDate());
 
   const { data: slots = [], isLoading } = useQuery({
     queryKey: ['slots', filter],
-    queryFn: () => api.get<Slot[]>(`/slots?sport=${filter}`),
+    queryFn: () => (filter === 'All' ? getAllSlots() : getSlotsBySport(filter)) as any,
   });
 
   const { data: members = [] } = useQuery({
     queryKey: ['members'],
-    queryFn: () => api.get<Member[]>('/members'),
+    queryFn: () => getMyMembers() as any,
   });
 
   const { mutate: createBooking, isPending } = useMutation({
-    mutationFn: (data: { slot_id: string; member_ids: string[]; session_date: string }) =>
-      api.post('/bookings', data),
+    mutationFn: (data: { slot_id: string; member_id: string; session_date: string; notes?: string }) =>
+      createBookingApi(data as any),
     onSuccess: () => {
       Alert.alert('✅ Booked!', 'Your session has been confirmed.');
       qc.invalidateQueries({ queryKey: ['slots'] });
       qc.invalidateQueries({ queryKey: ['bookings'] });
       setSelected(null);
-      setSelectedMembers([]);
+      setSelectedMemberId(null);
     },
     onError: (e: any) => Alert.alert('Booking Failed', e.message),
   });
 
-  const toggleMember = (id: string) => {
-    setSelectedMembers(prev =>
-      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
-    );
-  };
-
   const confirmBooking = () => {
-    if (!selected || selectedMembers.length === 0) {
-      Alert.alert('Select Members', 'Please select at least one member');
+    if (!selected || !selectedMemberId) {
+      Alert.alert('Select Member', 'Please select a member');
       return;
     }
-    createBooking({ slot_id: selected.id, member_ids: selectedMembers, session_date: sessionDate });
+    createBooking({ slot_id: selected.id, member_id: selectedMemberId, session_date: sessionDate });
   };
 
   const renderSlot = ({ item: slot }: { item: Slot }) => {
@@ -63,7 +59,7 @@ export default function BookingScreen() {
     return (
       <TouchableOpacity
         style={styles.slotCard}
-        onPress={() => { setSelected(slot); setSelectedMembers([]); }}
+        onPress={() => { setSelected(slot); setSelectedMemberId(null); }}
         testID={`slot-${slot.id}`}
         activeOpacity={0.8}
       >
@@ -152,8 +148,8 @@ export default function BookingScreen() {
                   {members.map(m => (
                     <TouchableOpacity
                       key={m.id}
-                      style={[styles.memberRow, selectedMembers.includes(m.id) && styles.memberRowActive]}
-                      onPress={() => toggleMember(m.id)}
+                      style={[styles.memberRow, selectedMemberId === m.id && styles.memberRowActive]}
+                      onPress={() => setSelectedMemberId(m.id)}
                       testID={`member-select-${m.id}`}
                     >
                       <View style={styles.memberInfo}>
@@ -165,8 +161,8 @@ export default function BookingScreen() {
                           <Text style={styles.memberRowRel}>{m.relation}  ·  Age {m.age}</Text>
                         </View>
                       </View>
-                      <View style={[styles.checkbox, selectedMembers.includes(m.id) && styles.checkboxActive]}>
-                        {selectedMembers.includes(m.id) && <Ionicons name="checkmark" size={14} color="#000" />}
+                      <View style={[styles.checkbox, selectedMemberId === m.id && styles.checkboxActive]}>
+                        {selectedMemberId === m.id && <Ionicons name="checkmark" size={14} color="#000" />}
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -176,9 +172,9 @@ export default function BookingScreen() {
                       <Text style={styles.cancelBtnText}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.confirmBtn, (isPending || selectedMembers.length === 0) && styles.confirmBtnDisabled]}
+                      style={[styles.confirmBtn, (isPending || !selectedMemberId) && styles.confirmBtnDisabled]}
                       onPress={confirmBooking}
-                      disabled={isPending || selectedMembers.length === 0}
+                      disabled={isPending || !selectedMemberId}
                       testID="confirm-booking-btn"
                     >
                       {isPending ? <ActivityIndicator color="#000" /> : <Text style={styles.confirmBtnText}>Confirm Booking</Text>}

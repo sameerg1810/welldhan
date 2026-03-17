@@ -7,10 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { api } from '../../src/api/client';
 import { COLORS } from '../../src/constants/colors';
 import { FoodPreference } from '../../src/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { getMyFoodPreferences, pauseAllFood, toggleFoodItem, updateFoodPreference } from '../../src/api/food';
 
 const CATEGORIES = ['All', 'Vegetable', 'Oil', 'Grain', 'Dairy', 'Spice'];
 
@@ -23,17 +23,22 @@ export default function FoodScreen() {
 
   const { data: prefs = [], isLoading } = useQuery({
     queryKey: ['food-prefs'],
-    queryFn: () => api.get<FoodPreference[]>('/food/preferences'),
+    queryFn: () => getMyFoodPreferences() as any,
   });
 
   const { mutate: toggle } = useMutation({
-    mutationFn: (id: string) => api.patch(`/food/preferences/${id}/toggle`, {}),
+    mutationFn: (pref: FoodPreference) =>
+      toggleFoodItem({
+        food_item_id: pref.food_item_id || pref.food_item?.id,
+        is_selected: !pref.is_selected,
+        default_quantity: pref.default_quantity,
+      }) as any,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['food-prefs'] }),
     onError: (e: any) => Alert.alert('Error', e.message),
   });
 
   const { mutate: pauseAll } = useMutation({
-    mutationFn: (pause_until: string) => api.post('/food/preferences/pause', { pause_until }),
+    mutationFn: (pause_until: string) => pauseAllFood({ pause_until }) as any,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['food-prefs'] });
       setPauseModal(false);
@@ -66,7 +71,7 @@ export default function FoodScreen() {
         </View>
         <Switch
           value={pref.is_selected}
-          onValueChange={() => toggle(pref.id)}
+          onValueChange={() => toggle(pref)}
           trackColor={{ false: '#374151', true: COLORS.accent + '66' }}
           thumbColor={pref.is_selected ? COLORS.accent : '#6b7280'}
           testID={`toggle-${pref.id}`}

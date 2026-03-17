@@ -3,21 +3,21 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
 import { COLORS, STATUS_COLORS } from '../../src/constants/colors';
 import { formatDate } from '../../src/utils';
+import { getTrainerBookings, markAttendance as markAttendanceApi } from '../../src/api/bookings';
 
 export default function AttendanceScreen() {
   const qc = useQueryClient();
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ['trainer-today'],
-    queryFn: () => api.get<any[]>('/trainer/today-bookings'),
+    queryFn: () => getTrainerBookings() as any,
   });
 
   const { mutate: markAttendance } = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api.patch(`/bookings/${id}/attendance`, { booking_id: id, status }),
+      markAttendanceApi({ booking_id: id, status }) as any,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['trainer-today'] }),
     onError: (e: any) => Alert.alert('Error', e.message),
   });

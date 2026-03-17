@@ -2,14 +2,14 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, Linking } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
 import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
 import { getSportIcon } from '../../src/utils';
+import { getMyStudents } from '../../src/api/trainers';
 
 export default function StudentsScreen() {
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['trainer-students'],
-    queryFn: () => api.get<any[]>('/trainer/students'),
+    queryFn: () => getMyStudents() as any,
   });
 
   return (

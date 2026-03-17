@@ -5,10 +5,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
 import { COLORS, STATUS_COLORS } from '../../src/constants/colors';
 import { formatDate } from '../../src/utils';
 import { FoodOrder } from '../../src/types';
+import { getMyFoodOrders } from '../../src/api/food';
 
 const FILTERS = ['This Week', 'This Month', 'All'];
 
@@ -17,7 +17,7 @@ export default function FoodHistoryScreen() {
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['food-orders'],
-    queryFn: () => api.get<FoodOrder[]>('/food/orders'),
+    queryFn: () => getMyFoodOrders() as any,
   });
 
   const now = new Date();

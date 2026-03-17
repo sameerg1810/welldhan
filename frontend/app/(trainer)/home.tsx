@@ -2,11 +2,12 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../src/api/client';
 import { COLORS } from '../../src/constants/colors';
 import { getSportIcon, getDaysText } from '../../src/utils';
 import { Slot, Trainer } from '../../src/types';
 import { useAuthStore } from '../../src/store/authStore';
+import { getTrainerSlots } from '../../src/api/slots';
+import { getTrainerBookings } from '../../src/api/bookings';
 
 export default function TrainerHome() {
   const { userData } = useAuthStore();
@@ -14,12 +15,12 @@ export default function TrainerHome() {
 
   const { data: slots = [], isLoading } = useQuery({
     queryKey: ['trainer-slots'],
-    queryFn: () => api.get<Slot[]>('/trainer/slots'),
+    queryFn: () => getTrainerSlots() as any,
   });
 
   const { data: todayBookings = [] } = useQuery({
     queryKey: ['trainer-today'],
-    queryFn: () => api.get<any[]>('/trainer/today-bookings'),
+    queryFn: () => getTrainerBookings() as any,
   });
 
   return (
