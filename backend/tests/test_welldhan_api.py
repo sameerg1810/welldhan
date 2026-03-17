@@ -28,6 +28,21 @@ def get_token(session, phone):
     assert r2.status_code == 200, f"verify-otp failed: {r2.text}"
     return r2.json()["token"], r2.json()["role"]
 
+
+def get_token_by_password_2fa(session, email, password):
+    """Helper: email+password -> SMS 2FA verify -> token (dev OTP expected if no 2Factor key)."""
+    r = session.post(f"{BASE_URL}/api/auth/login", json={"email": email, "password": password})
+    assert r.status_code == 200, f"login failed: {r.text}"
+    data = r.json()
+    assert data.get("requires_2fa") is True
+    ch = data.get("challenge_id")
+    assert ch
+    otp = data.get("otp_dev")
+    assert otp, "Dev OTP not returned for SMS 2FA (ensure TWOFACTOR_API_KEY is empty for dev)"
+    r2 = session.post(f"{BASE_URL}/api/2fa/sms/verify-otp", json={"challenge_id": ch, "otp": otp})
+    assert r2.status_code == 200, f"2fa verify failed: {r2.text}"
+    return r2.json()["token"], r2.json()["role"]
+
 # ─── Health / Seed ───────────────────────────────────────────────────────────
 
 class TestSeedAndHealth:
@@ -77,6 +92,12 @@ class TestAuth:
         assert "token" in data
         assert data["role"] == "User"
         print(f"User token obtained, role={data['role']}")
+
+    def test_password_login_requires_2fa_user(self, session):
+        # Seeded user doesn't have passwords by default; call seed/add-passwords first in dev if needed.
+        token, role = get_token_by_password_2fa(session, "ravi@example.com", "Welldhan@123")
+        assert token
+        assert role == "User"
 
     def test_invalid_otp(self, session):
         session.post(f"{BASE_URL}/api/auth/send-otp", json={"phone": USER_PHONE})
