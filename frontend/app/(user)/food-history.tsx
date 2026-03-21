@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
+  View, Text, FlatList, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { COLORS, STATUS_COLORS } from '../../src/constants/colors';
+import { STATUS_COLORS } from '../../src/constants/colors';
 import { formatDate } from '../../src/utils';
 import { FoodOrder } from '../../src/types';
 import { getMyFoodOrders } from '../../src/api/food';
+import { ScreenLayout, Card } from '../../src/components';
 
 const FILTERS = ['This Week', 'This Month', 'All'];
 
@@ -24,7 +24,7 @@ export default function FoodHistoryScreen() {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const filtered = orders.filter(o => {
+  const filtered = (Array.isArray(orders) ? orders : []).filter(o => {
     const d = new Date(o.delivery_date);
     if (filter === 'This Week') return d >= weekAgo;
     if (filter === 'This Month') return d >= monthAgo;
@@ -42,90 +42,69 @@ export default function FoodHistoryScreen() {
   const groupedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   const renderGroup = ({ item: date }: { item: string }) => (
-    <View style={styles.group} testID={`order-group-${date}`}>
-      <Text style={styles.dateHeader}>{formatDate(date)}</Text>
+    <View className="mb-8" testID={`order-group-${date}`}>
+      <Text className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 ml-1">{formatDate(date)}</Text>
       {grouped[date].map(o => {
-        const sc = STATUS_COLORS[o.delivery_status] || COLORS.textMuted;
+        const sc = STATUS_COLORS[o.delivery_status] || '#94a3b8';
         return (
-          <View key={o.id} style={styles.orderRow}>
-            <View style={styles.orderLeft}>
-              <Text style={styles.orderEmoji}>🥬</Text>
-              <View>
-                <Text style={styles.orderName}>{o.food_item?.name || 'Item'}</Text>
-                <Text style={styles.orderQty}>{o.quantity} {o.food_item?.unit}  ·  {o.delivery_time}</Text>
+          <Card key={o.id} className="mb-3 p-4">
+            <View className="flex-row justify-between items-center">
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-xl bg-accent/10 items-center justify-center">
+                  <Text className="text-xl">🥬</Text>
+                </View>
+                <View>
+                  <Text className="text-[15px] font-bold text-slate-900 dark:text-white">{o.food_item?.name || 'Item'}</Text>
+                  <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{o.quantity} {o.food_item?.unit}  ·  {o.delivery_time}</Text>
+                </View>
+              </View>
+              <View className="px-2.5 py-1 rounded-full border" style={{ backgroundColor: sc + '22', borderColor: sc }}>
+                <Text className="text-[10px] font-bold uppercase" style={{ color: sc }}>{o.delivery_status}</Text>
               </View>
             </View>
-            <View style={[styles.badge, { backgroundColor: sc + '22', borderColor: sc }]}>
-              <Text style={[styles.badgeText, { color: sc }]}>{o.delivery_status}</Text>
-            </View>
-          </View>
+          </Card>
         );
       })}
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <Text style={styles.title} testID="food-history-title">Food History</Text>
+    <ScreenLayout title="Food History">
+      <View className="flex-row px-5 gap-2 mb-6 mt-2">
+        {FILTERS.map(f => (
+          <TouchableOpacity
+            key={f}
+            className={`flex-1 py-3 rounded-2xl border items-center ${filter === f ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-surface border-slate-200 dark:border-white/10'}`}
+            onPress={() => setFilter(f)}
+            testID={`filter-${f}`}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: filter === f }}
+          >
+            <Text className={`text-[13px] font-bold ${filter === f ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}`}>{f}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-        <View style={styles.filters}>
-          {FILTERS.map(f => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.chip, filter === f && styles.chipActive]}
-              onPress={() => setFilter(f)}
-              testID={`filter-${f}`}
-            >
-              <Text style={[styles.chipText, filter === f && styles.chipTextActive]}>{f}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {isLoading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} />
-        ) : (
-          <FlatList
-            data={groupedDates}
-            renderItem={renderGroup}
-            keyExtractor={d => d}
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={
-              <View style={styles.empty}>
-                <Ionicons name="leaf-outline" size={48} color={COLORS.textMuted} />
-                <Text style={styles.emptyText}>No orders found</Text>
+      {isLoading ? (
+        <ActivityIndicator className="mt-10" color="#4ade80" />
+      ) : (
+        <FlatList
+          data={groupedDates}
+          renderItem={renderGroup}
+          keyExtractor={d => d}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+          ListEmptyComponent={
+            <View className="items-center pt-20 gap-4">
+              <View className="w-20 h-20 rounded-full bg-slate-50 dark:bg-surface items-center justify-center border border-slate-100 dark:border-white/5">
+                <Ionicons name="leaf-outline" size={40} color="#94a3b8" />
               </View>
-            }
-          />
-        )}
-      </SafeAreaView>
-    </View>
+              <Text className="text-slate-500 dark:text-slate-400 text-base font-medium">No orders found</Text>
+            </View>
+          }
+        />
+      )}
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  title: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-  filters: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, marginBottom: 12 },
-  chip: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: COLORS.card, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-  chipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  chipText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600' },
-  chipTextActive: { color: COLORS.primaryDark },
-  list: { paddingHorizontal: 20, paddingBottom: 24 },
-  group: { marginBottom: 20 },
-  dateHeader: { fontSize: 13, fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  orderRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: COLORS.card, borderRadius: 12, padding: 12, marginBottom: 8,
-    borderWidth: 1, borderColor: COLORS.cardBorder,
-  },
-  orderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  orderEmoji: { fontSize: 22 },
-  orderName: { fontSize: 14, fontWeight: '600', color: COLORS.textPrimary },
-  orderQty: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { color: COLORS.textSecondary, fontSize: 15 },
-});
+

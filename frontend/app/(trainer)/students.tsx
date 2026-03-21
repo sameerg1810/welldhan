@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Linking } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
+import { SPORT_COLORS } from '../../src/constants/colors';
 import { getSportIcon } from '../../src/utils';
 import { getMyStudents } from '../../src/api/trainers';
+import { ScreenLayout, Card } from '../../src/components';
 
 export default function StudentsScreen() {
   const { data: students = [], isLoading } = useQuery({
@@ -13,63 +13,54 @@ export default function StudentsScreen() {
   });
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <Text style={styles.title} testID="students-title">My Students</Text>
-        <Text style={styles.subtitle}>{students.length} students enrolled</Text>
-
-        {isLoading ? (
-          <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
-        ) : (
-          <FlatList
-            data={students}
-            keyExtractor={s => s.id}
-            contentContainerStyle={styles.list}
-            renderItem={({ item: s }) => (
-              <View style={styles.card} testID={`student-${s.id}`}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{s.member_name[0]}</Text>
+    <ScreenLayout 
+      title="My Students" 
+      subtitle={`${students.length} students enrolled`}
+    >
+      {isLoading ? (
+        <ActivityIndicator color="#4ade80" className="mt-10" />
+      ) : (
+        <FlatList
+          data={students}
+          keyExtractor={s => s.id}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24 }}
+          renderItem={({ item: s }) => (
+            <Card className="mb-3 p-4" testID={`student-${s.id}`}>
+              <View className="flex-row items-center gap-4">
+                <View className="w-12 h-12 rounded-full bg-accent/20 items-center justify-center border-2 border-accent/20">
+                  <Text className="text-xl font-black text-accent">{s.member_name[0]}</Text>
                 </View>
-                <View style={styles.info}>
-                  <Text style={styles.name}>{s.member_name}</Text>
-                  <Text style={styles.details}>
+                <View className="flex-1">
+                  <Text className="text-base font-bold text-slate-900 dark:text-white">{s.member_name}</Text>
+                  <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
                     {s.relation}  ·  Age {s.age}  ·  Flat {s.household?.flat_number}
                   </Text>
-                  <View style={[styles.sportChip, { backgroundColor: (SPORT_COLORS[s.assigned_sport] || COLORS.accent) + '22' }]}>
-                    <Text style={[styles.sportText, { color: SPORT_COLORS[s.assigned_sport] || COLORS.accent }]}>
+                  <View 
+                    className="px-2 py-1 rounded-lg self-start mt-2" 
+                    style={{ backgroundColor: (SPORT_COLORS[s.assigned_sport] || '#4ade80') + '22' }}
+                  >
+                    <Text 
+                      className="text-[10px] font-bold uppercase tracking-wider" 
+                      style={{ color: SPORT_COLORS[s.assigned_sport] || '#4ade80' }}
+                    >
                       {getSportIcon(s.assigned_sport)} {s.assigned_sport}
                     </Text>
                   </View>
                 </View>
               </View>
-            )}
-            ListEmptyComponent={
-              <View style={styles.empty}>
-                <Ionicons name="people-outline" size={48} color={COLORS.textMuted} />
-                <Text style={styles.emptyText}>No students yet</Text>
+            </Card>
+          )}
+          ListEmptyComponent={
+            <View className="items-center pt-20 gap-4">
+              <View className="w-20 h-20 rounded-full bg-slate-50 dark:bg-surface items-center justify-center border border-slate-100 dark:border-white/5">
+                <Ionicons name="people-outline" size={40} color="#94a3b8" />
               </View>
-            }
-          />
-        )}
-      </SafeAreaView>
-    </View>
+              <Text className="text-slate-500 dark:text-slate-400 text-base font-medium">No students yet</Text>
+            </View>
+          }
+        />
+      )}
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  title: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary, paddingHorizontal: 20, paddingTop: 8 },
-  subtitle: { fontSize: 14, color: COLORS.textSecondary, paddingHorizontal: 20, marginTop: 4, marginBottom: 16 },
-  list: { paddingHorizontal: 20, paddingBottom: 24 },
-  card: { backgroundColor: COLORS.card, borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: 'row', gap: 12, alignItems: 'center', borderWidth: 1, borderColor: COLORS.cardBorder },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 20, fontWeight: '700', color: COLORS.accent },
-  info: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  details: { fontSize: 12, color: COLORS.textSecondary, marginTop: 3 },
-  sportChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: 'flex-start', marginTop: 6 },
-  sportText: { fontSize: 11, fontWeight: '600' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { color: COLORS.textSecondary, fontSize: 15 },
-});

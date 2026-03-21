@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, ScrollView, TouchableOpacity,
   Image, ActivityIndicator, Linking, RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'nativewind';
 import { useAuthStore } from '../../src/store/authStore';
-import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
-import { api } from '../../src/api/client';
-import { getGreeting, getSportIcon, formatDate } from '../../src/utils';
+import { SPORT_COLORS } from '../../src/constants/colors';
+import { getGreeting, getSportIcon } from '../../src/utils';
 import { Household, Member, Booking } from '../../src/types';
 import { getMyHousehold } from '../../src/api/households';
 import { getUpcomingBookings } from '../../src/api/bookings';
 import { getCurrentPayment } from '../../src/api/payments';
 import { getMyFoodPreferences } from '../../src/api/food';
+import { ScreenLayout, Card } from '../../src/components';
 
 export default function UserHome() {
   const router = useRouter();
-  const { userData, userId } = useAuthStore();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const { userData } = useAuthStore();
   const household = userData as Household;
 
   const [members, setMembers] = useState<Member[]>([]);
@@ -36,7 +38,6 @@ export default function UserHome() {
         getCurrentPayment() as any,
         getMyFoodPreferences().catch(() => []) as any,
       ]);
-      // keep authStore household in sync if possible
       if (hh?.members) setMembers(hh.members);
       else if (Array.isArray(hh?.members) === false) setMembers([]);
       setBookings(Array.isArray(upcoming) ? upcoming : []);
@@ -57,198 +58,212 @@ export default function UserHome() {
   };
 
   if (loading) return (
-    <View style={styles.loading}>
-      <ActivityIndicator size="large" color={COLORS.accent} />
+    <View className="flex-1 bg-white dark:bg-primary-dark items-center justify-center">
+      <ActivityIndicator size="large" color="#4ade80" />
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={COLORS.accent} />}
+    <ScreenLayout
+      headerContent={
+        <TouchableOpacity 
+          className="w-11 h-11 rounded-full bg-green-500/10 items-center justify-center" 
+          onPress={openWhatsApp} 
+          testID="contact-manager-btn"
+          accessibilityRole="button"
+          accessibilityLabel="Contact Community Manager on WhatsApp"
         >
-          {/* Header */}
-          <View style={styles.header} testID="user-home">
-            <View>
-              <Text style={styles.greeting}>{getGreeting()},</Text>
-              <Text style={styles.name}>{household?.primary_name?.split(' ')[0]} 👋</Text>
+          <Ionicons name="logo-whatsapp" size="22" color="#22c55e" />
+        </TouchableOpacity>
+      }
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={() => { setRefreshing(true); load(); }} 
+            tintColor="#4ade80" 
+          />
+        }
+      >
+        {/* Header Title Override */}
+        <View className="px-5 py-2">
+          <Text className="text-sm text-slate-500 dark:text-slate-400">{getGreeting()},</Text>
+          <Text className="text-2xl font-black text-slate-900 dark:text-white">
+            {household?.primary_name?.split(' ')[0]} 👋
+          </Text>
+        </View>
+
+        {/* Snapshot */}
+        <Card variant="accented" className="mx-5 mb-2 py-2.5 px-4 flex-row items-center rounded-xl">
+          <Text className="text-xl mr-2">📌</Text>
+          <Text className="text-base font-bold text-accent">
+            {currentPayment?.is_paid ? 'Paid' : 'Due'} · {foodPrefsCount} food items
+          </Text>
+        </Card>
+
+        {/* Today's Session */}
+        <View className="px-5 mt-5">
+          <Text className="text-base font-bold text-slate-900 dark:text-white mb-3">Today's Session</Text>
+          {upcoming ? (
+            <Card 
+              className="flex-row justify-between items-center border-l-4 border-l-accent" 
+              testID="session-card"
+              accessibilityLabel={`Today's session: ${upcoming.slot?.sport} at ${upcoming.slot?.slot_time}`}
+            >
+              <View className="flex-row items-center gap-3 flex-1">
+                <Text className="text-3xl">{getSportIcon(upcoming.slot?.sport || '')}</Text>
+                <View>
+                  <Text className="text-lg font-bold text-slate-900 dark:text-white">{upcoming.slot?.sport}</Text>
+                  <Text className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">with {upcoming.trainer?.name}</Text>
+                  <Text className="text-[13px] font-semibold text-accent mt-1">⏰ {upcoming.slot?.slot_time}</Text>
+                  <Text className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">📍 {upcoming.slot?.location}</Text>
+                </View>
+              </View>
+              {upcoming.trainer?.image_url ? (
+                <Image source={{ uri: upcoming.trainer.image_url }} className="w-12 h-12 rounded-full border-2 border-accent" />
+              ) : null}
+            </Card>
+          ) : (
+            <TouchableOpacity 
+              className="bg-slate-50 dark:bg-surface rounded-2xl p-5 items-center border border-slate-200 dark:border-white/10 border-dashed" 
+              onPress={() => router.push('/(user)/booking')} 
+              testID="book-session-empty"
+              accessibilityRole="button"
+              accessibilityLabel="No sessions today. Tap to book a session."
+            >
+              <Text className="text-slate-500 dark:text-slate-400 text-[15px] mb-1.5">No sessions today</Text>
+              <Text className="text-accent text-sm font-semibold">Tap to book a session →</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Family Members */}
+        {members.length > 0 && (
+          <View className="px-5 mt-5">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-base font-bold text-slate-900 dark:text-white">My Family</Text>
+              <TouchableOpacity onPress={() => router.push('/(user)/members')} testID="view-members-btn">
+                <Text className="text-accent text-[13px] font-semibold">See all</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.whatsappBtn} onPress={openWhatsApp} testID="contact-manager-btn">
-              <Ionicons name="logo-whatsapp" size={22} color={COLORS.green} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {members.map(m => (
+                <View key={m.id} className="items-center mr-4 w-20" testID={`member-${m.id}`}>
+                  <View 
+                    className="w-[52px] h-[52px] rounded-full items-center justify-center mb-1.5"
+                    style={{ backgroundColor: SPORT_COLORS[m.assigned_sport] + '33' }}
+                  >
+                    <Text className="text-xl font-bold text-slate-900 dark:text-white">{m.member_name[0]}</Text>
+                  </View>
+                  <Text className="text-xs text-slate-900 dark:text-white font-semibold mb-1" numberOfLines={1}>
+                    {m.member_name.split(' ')[0]}
+                  </Text>
+                  <View 
+                    className="px-2 py-0.5 rounded-lg"
+                    style={{ backgroundColor: SPORT_COLORS[m.assigned_sport] + '22' }}
+                  >
+                    <Text 
+                      className="text-[10px] font-bold"
+                      style={{ color: SPORT_COLORS[m.assigned_sport] }}
+                    >
+                      {getSportIcon(m.assigned_sport)} {m.assigned_sport}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Food Delivery */}
+        {household?.food_plan_active && (
+          <View className="px-5 mt-5">
+            <Text className="text-base font-bold text-slate-900 dark:text-white mb-3">Food Delivery</Text>
+            <TouchableOpacity 
+              onPress={() => router.push('/(user)/food')} 
+              testID="food-delivery-card"
+              accessibilityRole="button"
+              accessibilityLabel="Food delivery tomorrow at 7:00 AM. Tap to manage."
+            >
+              <Card className="flex-row justify-between items-center">
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-3xl">🥬</Text>
+                  <View>
+                    <Text className="text-[15px] font-bold text-slate-900 dark:text-white">Tomorrow 7:00 AM</Text>
+                    <Text className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Organic basket delivery</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#4ade80" />
+              </Card>
             </TouchableOpacity>
           </View>
+        )}
 
-          {/* Snapshot */}
-          <View style={styles.streakBanner} testID="snapshot-banner">
-            <Text style={styles.streakFire}>📌</Text>
-            <Text style={styles.streakText}>
-              {currentPayment?.is_paid ? 'Paid' : 'Due'} · {foodPrefsCount} food items
-            </Text>
+        {/* Quick Actions */}
+        <View className="px-5 mt-5">
+          <Text className="text-base font-bold text-slate-900 dark:text-white mb-3">Quick Actions</Text>
+          <View className="flex-row gap-3">
+            <TouchableOpacity 
+              className="flex-1" 
+              onPress={() => router.push('/(user)/booking')} 
+              testID="quick-book-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Book a session"
+            >
+              <Card className="items-center gap-2 p-4">
+                <Ionicons name="calendar-outline" size={24} color="#4ade80" />
+                <Text className="text-xs text-slate-900 dark:text-white font-semibold text-center">Book Session</Text>
+              </Card>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              className="flex-1" 
+              onPress={() => router.push('/(user)/my-bookings')} 
+              testID="quick-bookings-btn"
+              accessibilityRole="button"
+              accessibilityLabel="View my bookings"
+            >
+              <Card className="items-center gap-2 p-4">
+                <Ionicons name="list-outline" size={24} color="#4ade80" />
+                <Text className="text-xs text-slate-900 dark:text-white font-semibold text-center">My Bookings</Text>
+              </Card>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              className={`flex-1 ${!household?.food_plan_active ? 'opacity-40' : ''}`}
+              onPress={() => household?.food_plan_active && router.push('/(user)/food')} 
+              testID="quick-food-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Manage food delivery"
+              accessibilityState={{ disabled: !household?.food_plan_active }}
+            >
+              <Card className="items-center gap-2 p-4">
+                <Ionicons name="leaf-outline" size={24} color={household?.food_plan_active ? "#4ade80" : "#94a3b8"} />
+                <Text className={`text-xs font-semibold text-center ${household?.food_plan_active ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                  Manage Food
+                </Text>
+              </Card>
+            </TouchableOpacity>
           </View>
-
-          {/* Today's Session */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Today's Session</Text>
-            {upcoming ? (
-              <View style={styles.sessionCard} testID="session-card">
-                <View style={styles.sessionLeft}>
-                  <Text style={styles.sportEmoji}>{getSportIcon(upcoming.slot?.sport || '')}</Text>
-                  <View>
-                    <Text style={styles.sportName}>{upcoming.slot?.sport}</Text>
-                    <Text style={styles.trainerName}>with {upcoming.trainer?.name}</Text>
-                    <Text style={styles.sessionTime}>⏰ {upcoming.slot?.slot_time}</Text>
-                    <Text style={styles.sessionLoc}>📍 {upcoming.slot?.location}</Text>
-                  </View>
-                </View>
-                {upcoming.trainer?.image_url ? (
-                  <Image source={{ uri: upcoming.trainer.image_url }} style={styles.trainerImg} />
-                ) : null}
-              </View>
-            ) : (
-              <TouchableOpacity style={styles.emptySession} onPress={() => router.push('/(user)/booking')} testID="book-session-empty">
-                <Text style={styles.emptyText}>No sessions today</Text>
-                <Text style={styles.emptyAction}>Tap to book a session →</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Family Members */}
-          {members.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionRow}>
-                <Text style={styles.sectionTitle}>My Family</Text>
-                <TouchableOpacity onPress={() => router.push('/(user)/members')} testID="view-members-btn">
-                  <Text style={styles.seeAll}>See all</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {members.map(m => (
-                  <View key={m.id} style={styles.memberChip} testID={`member-${m.id}`}>
-                    <View style={[styles.memberAvatar, { backgroundColor: SPORT_COLORS[m.assigned_sport] + '33' }]}>
-                      <Text style={styles.memberAvatarText}>{m.member_name[0]}</Text>
-                    </View>
-                    <Text style={styles.memberName}>{m.member_name.split(' ')[0]}</Text>
-                    <View style={[styles.sportChip, { backgroundColor: SPORT_COLORS[m.assigned_sport] + '22' }]}>
-                      <Text style={[styles.sportChipText, { color: SPORT_COLORS[m.assigned_sport] }]}>
-                        {getSportIcon(m.assigned_sport)} {m.assigned_sport}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Food Delivery */}
-          {household?.food_plan_active && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Food Delivery</Text>
-              <TouchableOpacity style={styles.foodCard} onPress={() => router.push('/(user)/food')} testID="food-delivery-card">
-                <View style={styles.foodLeft}>
-                  <Text style={styles.foodEmoji}>🥬</Text>
-                  <View>
-                    <Text style={styles.foodTitle}>Tomorrow 7:00 AM</Text>
-                    <Text style={styles.foodSub}>Organic basket delivery</Text>
-                  </View>
-                </View>
-                <View style={styles.foodArrow}>
-                  <Ionicons name="chevron-forward" size={18} color={COLORS.accent} />
-                </View>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Quick Actions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionsRow}>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(user)/booking')} testID="quick-book-btn">
-                <Ionicons name="calendar-outline" size={24} color={COLORS.accent} />
-                <Text style={styles.actionText}>Book Session</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(user)/my-bookings')} testID="quick-bookings-btn">
-                <Ionicons name="list-outline" size={24} color={COLORS.accent} />
-                <Text style={styles.actionText}>My Bookings</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, !household?.food_plan_active && styles.actionBtnDisabled]}
-                onPress={() => household?.food_plan_active && router.push('/(user)/food')} testID="quick-food-btn">
-                <Ionicons name="leaf-outline" size={24} color={household?.food_plan_active ? COLORS.accent : COLORS.textMuted} />
-                <Text style={[styles.actionText, !household?.food_plan_active && styles.disabledText]}>Manage Food</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={{ height: 24 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+        </View>
+        
+        <View className="h-6" />
+        <View className="flex-row items-center justify-center gap-3 opacity-60">
+          <TouchableOpacity onPress={() => router.push('/(legal)/terms')} accessibilityRole="link">
+            <Text className="text-slate-400 text-xs font-semibold">Terms</Text>
+          </TouchableOpacity>
+          <Text className="text-slate-400 text-[10px]">•</Text>
+          <TouchableOpacity onPress={() => router.push('/(legal)/privacy')} accessibilityRole="link">
+            <Text className="text-slate-400 text-xs font-semibold">Privacy</Text>
+          </TouchableOpacity>
+          <Text className="text-slate-400 text-[10px]">•</Text>
+          <TouchableOpacity onPress={() => router.push('/(legal)/refund')} accessibilityRole="link">
+            <Text className="text-slate-400 text-xs font-semibold">Refunds</Text>
+          </TouchableOpacity>
+        </View>
+        <View className="h-10" />
+      </ScrollView>
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  loading: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 },
-  greeting: { fontSize: 14, color: COLORS.textSecondary },
-  name: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary },
-  whatsappBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(37,211,102,0.12)', alignItems: 'center', justifyContent: 'center' },
-  streakBanner: {
-    marginHorizontal: 20, marginBottom: 8, flexDirection: 'row',
-    alignItems: 'center', backgroundColor: 'rgba(74,222,128,0.08)',
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10,
-    borderWidth: 1, borderColor: 'rgba(74,222,128,0.2)',
-  },
-  streakFire: { fontSize: 20, marginRight: 8 },
-  streakText: { fontSize: 16, fontWeight: '700', color: COLORS.accent },
-  streakSub: { fontSize: 14, color: COLORS.textSecondary },
-  section: { paddingHorizontal: 20, marginTop: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 },
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  seeAll: { color: COLORS.accent, fontSize: 13, fontWeight: '600' },
-  sessionCard: {
-    backgroundColor: COLORS.card, borderRadius: 16, padding: 16,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderWidth: 1, borderColor: COLORS.cardBorder,
-    borderLeftWidth: 4, borderLeftColor: COLORS.accent,
-  },
-  sessionLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  sportEmoji: { fontSize: 28 },
-  sportName: { fontSize: 17, fontWeight: '700', color: COLORS.textPrimary },
-  trainerName: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
-  sessionTime: { fontSize: 13, color: COLORS.accent, marginTop: 4 },
-  sessionLoc: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-  trainerImg: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: COLORS.accent },
-  emptySession: {
-    backgroundColor: COLORS.card, borderRadius: 16, padding: 20,
-    alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed',
-  },
-  emptyText: { color: COLORS.textSecondary, fontSize: 15, marginBottom: 6 },
-  emptyAction: { color: COLORS.accent, fontSize: 14, fontWeight: '600' },
-  memberChip: { alignItems: 'center', marginRight: 16, width: 80 },
-  memberAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  memberAvatarText: { fontSize: 20, fontWeight: '700', color: COLORS.textPrimary },
-  memberName: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '600', marginBottom: 4 },
-  sportChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  sportChipText: { fontSize: 10, fontWeight: '600' },
-  foodCard: {
-    backgroundColor: COLORS.card, borderRadius: 16, padding: 16,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderWidth: 1, borderColor: COLORS.cardBorder,
-  },
-  foodLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  foodEmoji: { fontSize: 28 },
-  foodTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  foodSub: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
-  foodArrow: {},
-  actionsRow: { flexDirection: 'row', gap: 12 },
-  actionBtn: {
-    flex: 1, backgroundColor: COLORS.card, borderRadius: 14,
-    padding: 16, alignItems: 'center', gap: 8,
-    borderWidth: 1, borderColor: COLORS.cardBorder,
-  },
-  actionBtnDisabled: { opacity: 0.4 },
-  actionText: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '600', textAlign: 'center' },
-  disabledText: { color: COLORS.textMuted },
-});

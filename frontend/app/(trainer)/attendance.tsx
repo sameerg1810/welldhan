@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { COLORS, STATUS_COLORS } from '../../src/constants/colors';
-import { formatDate } from '../../src/utils';
+import { STATUS_COLORS } from '../../src/constants/colors';
 import { getTrainerBookings, markAttendance as markAttendanceApi } from '../../src/api/bookings';
+import { ScreenLayout, Card, Button } from '../../src/components';
 
 export default function AttendanceScreen() {
   const qc = useQueryClient();
@@ -27,108 +26,84 @@ export default function AttendanceScreen() {
   const pending = bookings.filter(b => b.status === 'Confirmed').length;
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <Text style={styles.title} testID="attendance-title">Today's Attendance</Text>
+    <ScreenLayout title="Today's Attendance">
+      {/* Summary Stats */}
+      <View className="flex-row px-5 gap-3 mb-8 mt-2">
+        <Card variant="flat" className="flex-1 items-center p-3 border-green-500/20" testID="attended-stat">
+          <Text className="text-2xl font-black text-green-500">{attended}</Text>
+          <Text className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight text-center mt-1">Present</Text>
+        </Card>
+        <Card variant="flat" className="flex-1 items-center p-3 border-red-500/20" testID="noshow-stat">
+          <Text className="text-2xl font-black text-red-500">{noShow}</Text>
+          <Text className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight text-center mt-1">Absent</Text>
+        </Card>
+        <Card variant="flat" className="flex-1 items-center p-3 border-blue-500/20" testID="pending-stat">
+          <Text className="text-2xl font-black text-blue-500">{pending}</Text>
+          <Text className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight text-center mt-1">Pending</Text>
+        </Card>
+      </View>
 
-        {/* Summary */}
-        <View style={styles.statsRow}>
-          <View style={[styles.stat, { borderColor: '#22c55e' }]}>
-            <Text style={[styles.statNum, { color: '#22c55e' }]}>{attended}</Text>
-            <Text style={styles.statLabel}>Present</Text>
-          </View>
-          <View style={[styles.stat, { borderColor: '#ef4444' }]}>
-            <Text style={[styles.statNum, { color: '#ef4444' }]}>{noShow}</Text>
-            <Text style={styles.statLabel}>Absent</Text>
-          </View>
-          <View style={[styles.stat, { borderColor: '#3b82f6' }]}>
-            <Text style={[styles.statNum, { color: '#3b82f6' }]}>{pending}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
-        </View>
-
-        {isLoading ? (
-          <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
-        ) : (
-          <FlatList
-            data={bookings}
-            keyExtractor={b => b.id}
-            contentContainerStyle={styles.list}
-            renderItem={({ item: b }) => {
-              const sc = STATUS_COLORS[b.status] || COLORS.textMuted;
-              return (
-                <View style={styles.card} testID={`attendance-card-${b.id}`}>
-                  <View style={styles.cardLeft}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{(b.member?.member_name || 'M')[0]}</Text>
+      {isLoading ? (
+        <ActivityIndicator color="#4ade80" className="mt-10" />
+      ) : (
+        <FlatList
+          data={bookings}
+          keyExtractor={b => b.id}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24 }}
+          renderItem={({ item: b }) => {
+            const sc = STATUS_COLORS[b.status] || '#94a3b8';
+            return (
+              <Card className="mb-3 p-4" testID={`attendance-card-${b.id}`}>
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row gap-4 flex-1 items-center">
+                    <View className="w-11 h-11 rounded-full bg-accent/20 items-center justify-center border-2 border-accent/20">
+                      <Text className="text-lg font-black text-accent">{(b.member?.member_name || 'M')[0]}</Text>
                     </View>
-                    <View>
-                      <Text style={styles.memberName}>{b.member?.member_name || 'Unknown'}</Text>
-                      <Text style={styles.flat}>Flat {b.household?.flat_number}</Text>
-                      <Text style={styles.slot}>{b.slot?.slot_time}  ·  {b.slot?.sport}</Text>
+                    <View className="flex-1">
+                      <Text className="text-sm font-bold text-slate-900 dark:text-white">{b.member?.member_name || 'Unknown'}</Text>
+                      <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Flat {b.household?.flat_number}</Text>
+                      <Text className="text-xs text-accent font-bold mt-1">{b.slot?.slot_time}  ·  {b.slot?.sport}</Text>
                     </View>
                   </View>
+                  
                   {b.status === 'Confirmed' ? (
-                    <View style={styles.actions}>
-                      <TouchableOpacity
-                        style={styles.presentBtn}
+                    <View className="flex-row gap-2">
+                      <Button
+                        label="Present"
+                        size="sm"
+                        icon="checkmark"
                         onPress={() => markAttendance({ id: b.id, status: 'Attended' })}
                         testID={`mark-present-${b.id}`}
-                      >
-                        <Ionicons name="checkmark" size={16} color="#000" />
-                        <Text style={styles.presentText}>Present</Text>
-                      </TouchableOpacity>
+                        className="px-3"
+                      />
                       <TouchableOpacity
-                        style={styles.absentBtn}
+                        className="w-10 h-10 rounded-xl bg-red-500/10 items-center justify-center border border-red-500/20"
                         onPress={() => markAttendance({ id: b.id, status: 'NoShow' })}
                         testID={`mark-absent-${b.id}`}
                       >
-                        <Ionicons name="close" size={16} color={COLORS.error} />
+                        <Ionicons name="close" size={20} color="#ef4444" />
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <View style={[styles.badge, { backgroundColor: sc + '22', borderColor: sc }]}>
-                      <Text style={[styles.badgeText, { color: sc }]}>{b.status}</Text>
+                    <View className="px-3 py-1.5 rounded-full border" style={{ backgroundColor: sc + '22', borderColor: sc }}>
+                      <Text className="text-[10px] font-bold uppercase" style={{ color: sc }}>{b.status}</Text>
                     </View>
                   )}
                 </View>
-              );
-            }}
-            ListEmptyComponent={
-              <View style={styles.empty}>
-                <Ionicons name="checkmark-done-outline" size={48} color={COLORS.textMuted} />
-                <Text style={styles.emptyText}>No sessions today</Text>
+              </Card>
+            );
+          }}
+          ListEmptyComponent={
+            <View className="items-center pt-20 gap-4">
+              <View className="w-20 h-20 rounded-full bg-slate-50 dark:bg-surface items-center justify-center border border-slate-100 dark:border-white/5">
+                <Ionicons name="checkmark-done-outline" size={40} color="#94a3b8" />
               </View>
-            }
-          />
-        )}
-      </SafeAreaView>
-    </View>
+              <Text className="text-slate-500 dark:text-slate-400 text-base font-medium">No sessions today</Text>
+            </View>
+          }
+        />
+      )}
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  title: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-  statsRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 16 },
-  stat: { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', backgroundColor: COLORS.card, borderWidth: 1 },
-  statNum: { fontSize: 22, fontWeight: '800', marginBottom: 4 },
-  statLabel: { fontSize: 11, color: COLORS.textSecondary },
-  list: { paddingHorizontal: 20, paddingBottom: 24 },
-  card: { backgroundColor: COLORS.card, borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: COLORS.cardBorder },
-  cardLeft: { flexDirection: 'row', gap: 12, flex: 1, alignItems: 'center' },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 18, fontWeight: '700', color: COLORS.accent },
-  memberName: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
-  flat: { fontSize: 12, color: COLORS.textSecondary, marginTop: 1 },
-  slot: { fontSize: 12, color: COLORS.accent, marginTop: 2 },
-  actions: { flexDirection: 'row', gap: 6 },
-  presentBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.accent, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8 },
-  presentText: { color: '#000', fontSize: 12, fontWeight: '700' },
-  absentBtn: { backgroundColor: 'rgba(239,68,68,0.1)', padding: 7, borderRadius: 8, borderWidth: 1, borderColor: COLORS.error },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { color: COLORS.textSecondary, fontSize: 15 },
-});

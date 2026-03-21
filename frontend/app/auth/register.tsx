@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -12,8 +10,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../src/constants/colors';
+import { useColorScheme } from 'nativewind';
+import { ScreenLayout, Button, Input } from '../../src/components';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
@@ -21,8 +19,11 @@ type Role = 'User' | 'Trainer' | 'Manager';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const [role, setRole] = useState<Role>('User');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // shared
   const [email, setEmail] = useState('');
@@ -123,155 +124,102 @@ export default function RegisterScreen() {
     }
   };
 
+  const renderInput = (label: string, value: string, setter: (v: string) => void, fieldId: string, options: any = {}) => (
+    <Input
+      label={label}
+      value={value}
+      onChangeText={setter}
+      onFocus={() => setFocusedField(fieldId)}
+      onBlur={() => setFocusedField(null)}
+      isFocused={focusedField === fieldId}
+      {...options}
+    />
+  );
+
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safe}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity style={styles.back} onPress={() => router.back()} testID="register-back-btn">
-              <Text style={styles.backText}>← Back</Text>
-            </TouchableOpacity>
+    <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScreenLayout useSafeArea={true}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+          <TouchableOpacity onPress={() => router.back()} testID="register-back-btn" className="mb-5">
+            <Text className="text-accent text-base font-bold">← Back</Text>
+          </TouchableOpacity>
 
-            <View style={styles.header}>
-              <Text style={styles.title}>Create Account</Text>
-              <Text style={styles.subtitle}>Register as Member, Trainer, or Manager</Text>
-            </View>
+          <View className="mb-5">
+            <Text className="text-3xl font-black text-slate-900 dark:text-white mb-2">Create Account</Text>
+            <Text className="text-sm text-slate-500 dark:text-slate-400 leading-5">Register as Member, Trainer, or Manager</Text>
+          </View>
 
-            <View style={styles.modeRow}>
-              {(['User', 'Trainer', 'Manager'] as Role[]).map((r) => (
-                <TouchableOpacity
-                  key={r}
-                  onPress={() => setRole(r)}
-                  style={[styles.modeBtn, role === r && styles.modeBtnActive]}
-                  testID={`register-role-${r}`}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[styles.modeText, role === r && styles.modeTextActive]}>{r}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.form}>
-              {role === 'User' ? (
-                <>
-                  <Text style={styles.label}>Full Name</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Your name" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="you@example.com" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Phone</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="10-digit phone" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Flat Number</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={flatNumber} onChangeText={setFlatNumber} placeholder="A-101" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-                </>
-              ) : role === 'Trainer' ? (
-                <>
-                  <Text style={styles.label}>Name</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={trainerName} onChangeText={setTrainerName} placeholder="Trainer name" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="trainer@example.com" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Phone</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="10-digit phone" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Sport</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={sport} onChangeText={setSport} placeholder="Badminton" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Community ID</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={communityId} onChangeText={setCommunityId} placeholder="community uuid" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.label}>Manager Name</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={managerName} onChangeText={setManagerName} placeholder="Manager name" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Manager Email</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={managerEmail} onChangeText={setManagerEmail} autoCapitalize="none" keyboardType="email-address" placeholder="manager@example.com" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Manager Phone</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={managerPhone} onChangeText={setManagerPhone} keyboardType="phone-pad" placeholder="10-digit phone" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-
-                  <Text style={styles.label}>Community ID</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} value={managerCommunityId} onChangeText={setManagerCommunityId} placeholder="community uuid" placeholderTextColor={COLORS.textMuted} />
-                  </View>
-                </>
-              )}
-
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.inputRow}>
-                <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Password" placeholderTextColor={COLORS.textMuted} />
-              </View>
-
-              <Text style={styles.label}>Confirm Password</Text>
-              <View style={styles.inputRow}>
-                <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry placeholder="Confirm password" placeholderTextColor={COLORS.textMuted} />
-              </View>
-
+          <View className="flex-row gap-2.5 mb-5">
+            {(['User', 'Trainer', 'Manager'] as Role[]).map((r) => (
               <TouchableOpacity
-                style={[styles.button, (!canSubmit || loading) && styles.buttonDisabled]}
-                onPress={submit}
-                disabled={!canSubmit || loading}
-                testID="register-submit-btn"
+                key={r}
+                onPress={() => setRole(r)}
+                className={`flex-1 py-3 rounded-xl border items-center ${role === r ? 'border-accent bg-accent/10' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-surface'}`}
+                testID={`register-role-${r}`}
                 activeOpacity={0.85}
               >
-                {loading ? <ActivityIndicator color={COLORS.primaryDark} /> : <Text style={styles.buttonText}>Register</Text>}
+                <Text className={`text-sm font-bold ${role === r ? 'text-accent' : 'text-slate-400'}`}>{r}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View className="gap-1">
+            {role === 'User' ? (
+              <>
+                {renderInput('Full Name', fullName, setFullName, 'fullName', { placeholder: 'Your name' })}
+                {renderInput('Email', email, setEmail, 'email', { placeholder: 'you@example.com', autoCapitalize: 'none', keyboardType: 'email-address' })}
+                {renderInput('Phone', phone, setPhone, 'phone', { placeholder: '10-digit phone', keyboardType: 'phone-pad' })}
+                {renderInput('Flat Number', flatNumber, setFlatNumber, 'flatNumber', { placeholder: 'A-101' })}
+              </>
+            ) : role === 'Trainer' ? (
+              <>
+                {renderInput('Name', trainerName, setTrainerName, 'trainerName', { placeholder: 'Trainer name' })}
+                {renderInput('Email', email, setEmail, 'email', { placeholder: 'trainer@example.com', autoCapitalize: 'none', keyboardType: 'email-address' })}
+                {renderInput('Phone', phone, setPhone, 'phone', { placeholder: '10-digit phone', keyboardType: 'phone-pad' })}
+                {renderInput('Sport', sport, setSport, 'sport', { placeholder: 'Badminton' })}
+                {renderInput('Community ID', communityId, setCommunityId, 'communityId', { placeholder: 'community uuid' })}
+              </>
+            ) : (
+              <>
+                {renderInput('Manager Name', managerName, setManagerName, 'managerName', { placeholder: 'Manager name' })}
+                {renderInput('Manager Email', managerEmail, setManagerEmail, 'managerEmail', { placeholder: 'manager@example.com', autoCapitalize: 'none', keyboardType: 'email-address' })}
+                {renderInput('Manager Phone', managerPhone, setManagerPhone, 'managerPhone', { placeholder: '10-digit phone', keyboardType: 'phone-pad' })}
+                {renderInput('Community ID', managerCommunityId, setManagerCommunityId, 'managerCommunityId', { placeholder: 'community uuid' })}
+              </>
+            )}
+
+            {renderInput('Password', password, setPassword, 'password', { placeholder: 'Password', secureTextEntry: true })}
+            {renderInput('Confirm Password', confirmPassword, setConfirmPassword, 'confirmPassword', { placeholder: 'Confirm password', secureTextEntry: true })}
+
+            <View className="flex-row flex-wrap justify-center mt-2 px-2">
+              <Text className="text-slate-500 dark:text-slate-400 text-xs text-center">By registering, you agree to our </Text>
+              <TouchableOpacity onPress={() => router.push('/(legal)/terms')}>
+                <Text className="text-accent text-xs font-bold underline">Terms</Text>
+              </TouchableOpacity>
+              <Text className="text-slate-500 dark:text-slate-400 text-xs">, </Text>
+              <TouchableOpacity onPress={() => router.push('/(legal)/privacy')}>
+                <Text className="text-accent text-xs font-bold underline">Privacy</Text>
+              </TouchableOpacity>
+              <Text className="text-slate-500 dark:text-slate-400 text-xs"> and </Text>
+              <TouchableOpacity onPress={() => router.push('/(legal)/refund')}>
+                <Text className="text-accent text-xs font-bold underline">Refunds</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
+
+            <Button
+              label="Register"
+              onPress={submit}
+              loading={loading}
+              disabled={!canSubmit}
+              testID="register-submit-btn"
+              size="lg"
+              className="mt-6"
+            />
+          </View>
+        </ScrollView>
+      </ScreenLayout>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  content: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 },
-  back: { marginBottom: 18 },
-  backText: { color: COLORS.accent, fontSize: 16, fontWeight: '600' },
-  header: { marginBottom: 18 },
-  title: { fontSize: 28, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 6 },
-  subtitle: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 20 },
-  modeRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  modeBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.inputBg, alignItems: 'center' },
-  modeBtnActive: { borderColor: COLORS.accent, backgroundColor: 'rgba(74,222,128,0.08)' },
-  modeText: { color: COLORS.textMuted, fontSize: 14, fontWeight: '700' },
-  modeTextActive: { color: COLORS.accent },
-  form: { gap: 14 },
-  label: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
-  inputRow: { backgroundColor: COLORS.inputBg, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden' },
-  input: { paddingHorizontal: 14, paddingVertical: 14, color: COLORS.textPrimary, fontSize: 16 },
-  button: { backgroundColor: COLORS.accent, paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginTop: 8 },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: COLORS.primaryDark, fontSize: 17, fontWeight: '800' },
-});
 

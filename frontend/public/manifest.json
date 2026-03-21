@@ -1,0 +1,16 @@
+{
+  "name": "WELLDHAN",
+  "short_name": "WELLDHAN",
+  "description": "Premium Wellness and Organic Food for Gated Communities.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1b13",
+  "theme_color": "#1a4d2e",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

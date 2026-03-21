@@ -1,26 +1,30 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, FlatList, TouchableOpacity,
   Image, Modal, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
+import { useColorScheme } from 'nativewind';
+import { SPORT_COLORS } from '../../src/constants/colors';
 import { getSportIcon, getSpotsColor, getDaysText, getTodayDate } from '../../src/utils';
-import { Slot, Member } from '../../src/types';
+import { Slot } from '../../src/types';
 import { getAllSlots, getSlotsBySport } from '../../src/api/slots';
 import { getMyMembers } from '../../src/api/households';
 import { createBooking as createBookingApi } from '../../src/api/bookings';
+import { ScreenLayout, Card, Button } from '../../src/components';
 
 const SPORTS = ['All', 'Badminton', 'Yoga', 'Karate', 'Swimming'];
 
 export default function BookingScreen() {
   const qc = useQueryClient();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  
   const [filter, setFilter] = useState('All');
   const [selected, setSelected] = useState<Slot | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [sessionDate, setSessionDate] = useState(getTodayDate());
+  const [sessionDate] = useState(getTodayDate());
 
   const { data: slots = [], isLoading } = useQuery({
     queryKey: ['slots', filter],
@@ -57,128 +61,143 @@ export default function BookingScreen() {
     const spots = slot.spots_left ?? (slot.max_capacity - slot.current_booked);
     const spotsColor = getSpotsColor(spots);
     return (
-      <TouchableOpacity
-        style={styles.slotCard}
+      <Card
+        className="mb-3"
         onPress={() => { setSelected(slot); setSelectedMemberId(null); }}
         testID={`slot-${slot.id}`}
-        activeOpacity={0.8}
+        accessibilityLabel={`${slot.sport} session by ${slot.trainer?.name} at ${slot.slot_time}. ${spots} spots left.`}
       >
-        <View style={styles.slotLeft}>
-          <View style={[styles.sportIconBox, { backgroundColor: (SPORT_COLORS[slot.sport] || COLORS.accent) + '22' }]}>
-            <Text style={styles.sportIconText}>{getSportIcon(slot.sport)}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.sportName}>{slot.sport}</Text>
-            <View style={styles.trainerRow}>
-              {slot.trainer?.image_url ? (
-                <Image source={{ uri: slot.trainer.image_url }} style={styles.trainerThumb} />
-              ) : null}
-              <Text style={styles.trainerName}>{slot.trainer?.name}</Text>
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row gap-3 flex-1">
+            <View 
+              className="w-[52px] h-[52px] rounded-xl items-center justify-center"
+              style={{ backgroundColor: (SPORT_COLORS[slot.sport] || '#4ade80') + '22' }}
+            >
+              <Text className="text-2xl">{getSportIcon(slot.sport)}</Text>
             </View>
-            <Text style={styles.slotTime}>⏰ {slot.slot_time}  ·  {getDaysText(slot.slot_days)}</Text>
-            <Text style={styles.slotLoc}>📍 {slot.location}</Text>
+            <View className="flex-1">
+              <Text className="text-base font-bold text-slate-900 dark:text-white">{slot.sport}</Text>
+              <View className="flex-row items-center gap-1.5 mt-0.5">
+                {slot.trainer?.image_url ? (
+                  <Image source={{ uri: slot.trainer.image_url }} className="w-5 h-5 rounded-full" />
+                ) : null}
+                <Text className="text-[13px] text-slate-500 dark:text-slate-400">{slot.trainer?.name}</Text>
+              </View>
+              <Text className="text-xs font-semibold text-accent mt-1">⏰ {slot.slot_time}  ·  {getDaysText(slot.slot_days)}</Text>
+              <Text className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">📍 {slot.location}</Text>
+            </View>
+          </View>
+          <View 
+            className="px-2.5 py-1 rounded-full border"
+            style={{ backgroundColor: spotsColor + '22', borderColor: spotsColor }}
+          >
+            <Text className="text-[12px] font-bold" style={{ color: spotsColor }}>
+              {spots === 0 ? 'Full' : `${spots} left`}
+            </Text>
           </View>
         </View>
-        <View style={[styles.spotsBadge, { backgroundColor: spotsColor + '22', borderColor: spotsColor }]}>
-          <Text style={[styles.spotsText, { color: spotsColor }]}>
-            {spots === 0 ? 'Full' : `${spots} left`}
-          </Text>
-        </View>
-      </TouchableOpacity>
+      </Card>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={styles.headerRow}>
-          <Text style={styles.title} testID="booking-title">Book a Session</Text>
-        </View>
+    <ScreenLayout title="Book a Session">
 
         {/* Sport Filters */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContent}>
-          {SPORTS.map(s => (
-            <TouchableOpacity
-              key={s}
-              style={[styles.filterChip, filter === s && styles.filterChipActive]}
-              onPress={() => setFilter(s)}
-              testID={`filter-${s}`}
-            >
-              <Text style={[styles.filterText, filter === s && styles.filterTextActive]}>
-                {s !== 'All' ? `${getSportIcon(s)} ` : ''}{s}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View className="h-[50px] mt-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-5" contentContainerStyle={{ gap: 8, alignItems: 'center' }}>
+            {SPORTS.map(s => (
+              <TouchableOpacity
+                key={s}
+                className={`px-4 py-2 rounded-full border ${filter === s ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-surface border-slate-200 dark:border-white/10'}`}
+                onPress={() => setFilter(s)}
+                testID={`filter-${s}`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: filter === s }}
+              >
+                <Text className={`text-[13px] font-bold ${filter === s ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {s !== 'All' ? `${getSportIcon(s)} ` : ''}{s}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
         {isLoading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} />
+          <ActivityIndicator className="mt-10" color="#4ade80" />
         ) : (
           <FlatList
             data={slots}
             renderItem={renderSlot}
             keyExtractor={s => s.id}
-            contentContainerStyle={styles.list}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 }}
             ListEmptyComponent={
-              <View style={styles.empty}>
-                <Text style={styles.emptyText}>No available slots</Text>
+              <View className="items-center pt-14">
+                <Text className="text-slate-500 dark:text-slate-400 text-base">No available slots</Text>
               </View>
             }
           />
         )}
-      </SafeAreaView>
 
       {/* Booking Modal */}
       <Modal visible={!!selected} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
-            <ScrollView>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white dark:bg-surface rounded-t-[32px] p-6 max-h-[85%] shadow-2xl">
+            <View className="w-10 h-1 bg-slate-200 dark:bg-white/10 rounded-full self-center mb-6" />
+            <ScrollView showsVerticalScrollIndicator={false}>
               {selected && (
                 <>
-                  <Text style={styles.modalTitle}>Confirm Booking</Text>
-                  <View style={styles.modalCard}>
-                    <Text style={styles.modalSport}>{getSportIcon(selected.sport)} {selected.sport}</Text>
-                    <Text style={styles.modalInfo}>👤 {selected.trainer?.name}</Text>
-                    <Text style={styles.modalInfo}>⏰ {selected.slot_time}  ·  {getDaysText(selected.slot_days)}</Text>
-                    <Text style={styles.modalInfo}>📍 {selected.location}</Text>
-                  </View>
+                  <Text className="text-xl font-black text-slate-900 dark:text-white mb-4">Confirm Booking</Text>
+                  
+                  <Card variant="flat" className="mb-6">
+                    <Text className="text-lg font-bold text-accent mb-1">{getSportIcon(selected.sport)} {selected.sport}</Text>
+                    <Text className="text-sm text-slate-500 dark:text-slate-400 font-medium">👤 {selected.trainer?.name}</Text>
+                    <Text className="text-sm text-slate-500 dark:text-slate-400 font-medium">⏰ {selected.slot_time}  ·  {getDaysText(selected.slot_days)}</Text>
+                    <Text className="text-sm text-slate-500 dark:text-slate-400 font-medium">📍 {selected.location}</Text>
+                  </Card>
 
-                  <Text style={styles.membersLabel}>Select Members</Text>
+                  <Text className="text-[13px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 ml-1">Select Members</Text>
                   {members.map(m => (
                     <TouchableOpacity
                       key={m.id}
-                      style={[styles.memberRow, selectedMemberId === m.id && styles.memberRowActive]}
+                      className={`flex-row justify-between items-center p-4 rounded-2xl mb-2 border ${selectedMemberId === m.id ? 'bg-accent/10 border-accent' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/10'}`}
                       onPress={() => setSelectedMemberId(m.id)}
                       testID={`member-select-${m.id}`}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: selectedMemberId === m.id }}
                     >
-                      <View style={styles.memberInfo}>
-                        <View style={styles.memberDot}>
-                          <Text style={styles.memberDotText}>{m.member_name[0]}</Text>
+                      <View className="flex-row items-center gap-3">
+                        <View className="w-10 h-10 rounded-full bg-accent/20 items-center justify-center">
+                          <Text className="text-base font-bold text-accent">{m.member_name[0]}</Text>
                         </View>
                         <View>
-                          <Text style={styles.memberRowName}>{m.member_name}</Text>
-                          <Text style={styles.memberRowRel}>{m.relation}  ·  Age {m.age}</Text>
+                          <Text className="text-[15px] font-bold text-slate-900 dark:text-white">{m.member_name}</Text>
+                          <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{m.relation}  ·  Age {m.age}</Text>
                         </View>
                       </View>
-                      <View style={[styles.checkbox, selectedMemberId === m.id && styles.checkboxActive]}>
-                        {selectedMemberId === m.id && <Ionicons name="checkmark" size={14} color="#000" />}
+                      <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${selectedMemberId === m.id ? 'bg-accent border-accent' : 'border-slate-300 dark:border-white/20'}`}>
+                        {selectedMemberId === m.id && <Ionicons name="checkmark" size={14} color="#0d1b13" />}
                       </View>
                     </TouchableOpacity>
                   ))}
 
-                  <View style={styles.modalActions}>
-                    <TouchableOpacity style={styles.cancelBtn} onPress={() => setSelected(null)} testID="cancel-modal-btn">
-                      <Text style={styles.cancelBtnText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.confirmBtn, (isPending || !selectedMemberId) && styles.confirmBtnDisabled]}
+                  <View className="flex-row gap-3 mt-6 pb-4">
+                    <Button 
+                      label="Cancel" 
+                      variant="secondary" 
+                      className="flex-1" 
+                      onPress={() => setSelected(null)} 
+                      testID="cancel-modal-btn"
+                    />
+                    <Button
+                      label="Book Now"
+                      variant="primary"
+                      className="flex-[2]"
                       onPress={confirmBooking}
-                      disabled={isPending || !selectedMemberId}
+                      loading={isPending}
+                      disabled={!selectedMemberId}
                       testID="confirm-booking-btn"
-                    >
-                      {isPending ? <ActivityIndicator color="#000" /> : <Text style={styles.confirmBtnText}>Confirm Booking</Text>}
-                    </TouchableOpacity>
+                    />
                   </View>
                 </>
               )}
@@ -186,71 +205,7 @@ export default function BookingScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  headerRow: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
-  title: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary },
-  filterScroll: { maxHeight: 50, marginTop: 8 },
-  filterContent: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
-  filterChip: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
-  },
-  filterChipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  filterText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
-  filterTextActive: { color: COLORS.primaryDark },
-  list: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 },
-  slotCard: {
-    backgroundColor: COLORS.card, borderRadius: 16, padding: 16,
-    marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', borderWidth: 1, borderColor: COLORS.cardBorder,
-  },
-  slotLeft: { flexDirection: 'row', gap: 12, flex: 1 },
-  sportIconBox: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  sportIconText: { fontSize: 24 },
-  sportName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
-  trainerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
-  trainerThumb: { width: 20, height: 20, borderRadius: 10 },
-  trainerName: { fontSize: 13, color: COLORS.textSecondary },
-  slotTime: { fontSize: 12, color: COLORS.accent, marginTop: 4 },
-  slotLoc: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-  spotsBadge: {
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
-    borderWidth: 1, alignSelf: 'flex-start',
-  },
-  spotsText: { fontSize: 12, fontWeight: '700' },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyText: { color: COLORS.textSecondary, fontSize: 16 },
-  modalOverlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: '#1a1a2e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '85%' },
-  modalHandle: { width: 40, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 16 },
-  modalCard: { backgroundColor: COLORS.background, borderRadius: 12, padding: 14, marginBottom: 20, gap: 6 },
-  modalSport: { fontSize: 18, fontWeight: '700', color: COLORS.accent, marginBottom: 4 },
-  modalInfo: { fontSize: 14, color: COLORS.textSecondary },
-  membersLabel: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
-  memberRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 12, borderRadius: 12, marginBottom: 8,
-    backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
-  },
-  memberRowActive: { backgroundColor: 'rgba(74,222,128,0.08)', borderColor: COLORS.accent },
-  memberInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  memberDot: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
-  memberDotText: { fontSize: 16, fontWeight: '700', color: COLORS.accent },
-  memberRowName: { fontSize: 15, fontWeight: '600', color: COLORS.textPrimary },
-  memberRowRel: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
-  checkboxActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  modalActions: { flexDirection: 'row', gap: 12, marginTop: 20 },
-  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-  cancelBtnText: { color: COLORS.textSecondary, fontWeight: '600' },
-  confirmBtn: { flex: 2, backgroundColor: COLORS.accent, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  confirmBtnDisabled: { opacity: 0.5 },
-  confirmBtnText: { color: COLORS.primaryDark, fontWeight: '800', fontSize: 15 },
-});

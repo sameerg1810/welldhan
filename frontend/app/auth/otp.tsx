@@ -1,17 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../src/constants/colors';
 import { useAuthStore } from '../../src/store/authStore';
+import { useColorScheme } from 'nativewind';
+import { ScreenLayout, Button } from '../../src/components';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function OTPScreen() {
   const router = useRouter();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const params = useLocalSearchParams<{
     phone?: string;
     maskedEmail?: string;
@@ -95,120 +97,80 @@ export default function OTPScreen() {
     }
   };
 
-  const subtitleLabel = 'OTP sent to';
   const subtitleValue = params.challengeId
     ? (params.maskedPhone || 'your phone')
     : (params.maskedEmail || 'your email');
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safe}>
-          <View style={styles.content}>
-            <TouchableOpacity style={styles.back} onPress={() => router.back()} testID="back-btn">
-              <Text style={styles.backText}>← Back</Text>
-            </TouchableOpacity>
+    <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScreenLayout 
+        headerContent={
+          <TouchableOpacity onPress={() => router.back()} testID="back-btn" className="flex-row items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-surface rounded-full border border-slate-100 dark:border-white/5">
+            <Ionicons name="arrow-back" size={16} color="#4ade80" />
+            <Text className="text-accent text-[13px] font-black uppercase tracking-tight">Back</Text>
+          </TouchableOpacity>
+        }
+      >
+        <View className="flex-1 px-6 pt-2">
+          <View className="mb-10">
+            <Text className="text-3xl font-black text-slate-900 dark:text-white mb-2">Verify OTP</Text>
+            <Text className="text-[15px] text-slate-500 dark:text-slate-400 leading-6">
+              OTP sent to{'\n'}
+              <Text className="text-accent font-bold">{subtitleValue}</Text>
+            </Text>
+            {params.devOtp ? (
+              <View className="mt-4 bg-accent/10 rounded-2xl p-4 border border-accent/20">
+                <Text className="text-accent text-xs font-black uppercase tracking-widest">🛠 Dev Mode — OTP: {params.devOtp}</Text>
+              </View>
+            ) : null}
+          </View>
 
-            <View style={styles.header}>
-              <Text style={styles.title}>Verify OTP</Text>
-              <Text style={styles.subtitle}>
-                {subtitleLabel}{'\n'}
-                <Text style={styles.email}>{subtitleValue}</Text>
-              </Text>
-              {params.devOtp ? (
-                <View style={styles.devBadge}>
-                  <Text style={styles.devText}>🛠 Dev Mode — OTP: {params.devOtp}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            <View style={styles.form}>
-              <Text style={styles.label}>Enter 6-digit OTP</Text>
+          <View className="gap-6">
+            <View>
+              <Text className="text-[11px] text-slate-400 dark:text-slate-500 font-black tracking-[2px] uppercase mb-4 ml-1">Enter 6-digit OTP</Text>
               <TextInput
                 ref={inputRef}
-                style={styles.otpInput}
+                className="bg-slate-50 dark:bg-surface rounded-[32px] border-2 border-accent/30 py-6 text-[32px] font-black text-slate-900 dark:text-white text-center tracking-[12px] shadow-2xl shadow-accent/10"
                 value={otp}
                 onChangeText={(t) => setOtp(t.replace(/\D/g, '').slice(0, 6))}
                 keyboardType="number-pad"
                 maxLength={6}
                 placeholder="· · · · · ·"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
                 testID="otp-input"
-                textAlign="center"
               />
-
-              <TouchableOpacity
-                style={[styles.button, (loading || otp.length < 6) && styles.buttonDisabled]}
-                onPress={handleVerify}
-                disabled={loading || otp.length < 6}
-                testID="verify-btn"
-                activeOpacity={0.85}
-              >
-                {loading ? (
-                  <ActivityIndicator color={COLORS.primaryDark} />
-                ) : (
-                  <Text style={styles.buttonText}>Verify & Login</Text>
-                )}
-              </TouchableOpacity>
-
-              <View style={styles.resendRow}>
-                {countdown > 0 ? (
-                  <Text style={styles.countdown}>Resend OTP in {countdown}s</Text>
-                ) : (
-                  <TouchableOpacity onPress={handleResend} disabled={resending} testID="resend-btn">
-                    {resending ? (
-                      <ActivityIndicator color={COLORS.accent} size="small" />
-                    ) : (
-                      <Text style={styles.resendText}>Resend OTP</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-              </View>
             </View>
 
-            <Text style={styles.expiry}>⏱ OTP expires in 10 minutes</Text>
+            <Button
+              label="Verify & Login"
+              variant="primary"
+              onPress={handleVerify}
+              loading={loading}
+              disabled={otp.length < 6}
+              testID="verify-btn"
+              className="py-5"
+            />
+
+            <View className="items-center">
+              {countdown > 0 ? (
+                <Text className="text-slate-500 dark:text-slate-400 text-sm font-medium">Resend OTP in {countdown}s</Text>
+              ) : (
+                <TouchableOpacity onPress={handleResend} disabled={resending} testID="resend-btn" className="flex-row items-center gap-2">
+                  {resending ? (
+                    <ActivityIndicator color="#4ade80" size="small" />
+                  ) : (
+                    <Text className="text-accent text-sm font-black uppercase tracking-widest underline decoration-accent/30 underline-offset-4">Resend OTP</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        </SafeAreaView>
-      </View>
+
+          <Text className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest text-center absolute bottom-10 left-0 right-0">⏱ OTP expires in 10 minutes</Text>
+        </View>
+      </ScreenLayout>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: 24, paddingTop: 16 },
-  back: { marginBottom: 24 },
-  backText: { color: COLORS.accent, fontSize: 16, fontWeight: '600' },
-  header: { marginBottom: 40 },
-  title: { fontSize: 30, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 8 },
-  subtitle: { fontSize: 15, color: COLORS.textSecondary, lineHeight: 22 },
-  email: { color: COLORS.accent, fontWeight: '600' },
-  devBadge: {
-    marginTop: 12, backgroundColor: 'rgba(74,222,128,0.1)',
-    borderRadius: 8, padding: 10, borderWidth: 1, borderColor: 'rgba(74,222,128,0.3)',
-  },
-  devText: { color: COLORS.accent, fontSize: 13, fontWeight: '600' },
-  form: { gap: 16 },
-  label: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
-  otpInput: {
-    backgroundColor: COLORS.inputBg, borderRadius: 14,
-    borderWidth: 1, borderColor: COLORS.accent,
-    paddingVertical: 20, fontSize: 30, color: COLORS.textPrimary,
-    letterSpacing: 16, textAlign: 'center',
-    shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3, shadowRadius: 8,
-  },
-  button: {
-    backgroundColor: COLORS.accent, paddingVertical: 17,
-    borderRadius: 14, alignItems: 'center', marginTop: 8,
-    shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 12, elevation: 6,
-  },
-  buttonDisabled: { opacity: 0.5, shadowOpacity: 0 },
-  buttonText: { color: COLORS.primaryDark, fontSize: 17, fontWeight: '800' },
-  resendRow: { alignItems: 'center' },
-  countdown: { color: COLORS.textMuted, fontSize: 14 },
-  resendText: { color: COLORS.accent, fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
-  expiry: { color: COLORS.textMuted, fontSize: 13, textAlign: 'center', position: 'absolute', bottom: 32, left: 0, right: 0 },
-});
+

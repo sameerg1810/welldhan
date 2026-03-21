@@ -3,6 +3,8 @@
     "name": "WELLDHAN",
     "slug": "welldhan",
     "version": "1.0.0",
+    "description": "WELLDHAN - Premium Wellness and Organic Food for Gated Communities. Sports coaching, venue booking, and organic delivery.",
+    "githubUrl": "https://github.com/welldhan/app",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "welldhan",

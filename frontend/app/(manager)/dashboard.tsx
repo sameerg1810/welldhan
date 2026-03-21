@@ -1,11 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { COLORS } from '../../src/constants/colors';
 import { formatCurrency } from '../../src/utils';
 import { useAuthStore } from '../../src/store/authStore';
 import { getDashboardStats, getPaymentSummary, getRecentBookings } from '../../src/api/dashboard';
+import { ScreenLayout, Card } from '../../src/components';
 
 export default function ManagerDashboard() {
   const { userData } = useAuthStore();
@@ -27,7 +26,7 @@ export default function ManagerDashboard() {
   });
 
   const cards = stats ? [
-    { icon: 'home-outline', label: 'Total Families', value: stats.total_families, color: COLORS.accent },
+    { icon: 'home-outline', label: 'Total Families', value: stats.total_families, color: '#4ade80' },
     { icon: 'people-outline', label: 'Total Trainers', value: stats.total_trainers, color: '#22c55e' },
     { icon: 'calendar-outline', label: "Today's Bookings", value: stats.today_bookings, color: '#3b82f6' },
     { icon: 'warning-outline', label: 'Pending Payments', value: stats.pending_payments, color: '#ef4444' },
@@ -36,81 +35,67 @@ export default function ManagerDashboard() {
   ] : [];
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>Manager Dashboard</Text>
-              <Text style={styles.community}>{community?.name}</Text>
-              <Text style={styles.location}>📍 {community?.location}</Text>
-            </View>
-            <Ionicons name="shield-checkmark" size={32} color={COLORS.accent} />
-          </View>
+    <ScreenLayout 
+      headerContent={<Ionicons name="shield-checkmark" size={32} color="#4ade80" />}
+    >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+        <View className="px-5 pt-2 mb-6">
+          <Text className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Manager Dashboard</Text>
+          <Text className="text-2xl font-black text-slate-900 dark:text-white mt-1">{community?.name}</Text>
+          <Text className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">📍 {community?.location}</Text>
+        </View>
 
-          {isLoading ? (
-            <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
-          ) : (
-            <View style={styles.statsGrid}>
-              {cards.map(s => (
-                <View key={s.label} style={styles.statCard} testID={`stat-${s.label}`}>
-                  <View style={[styles.iconBox, { backgroundColor: s.color + '22' }]}>
-                    <Ionicons name={s.icon as any} size={22} color={s.color} />
+        {isLoading ? (
+          <ActivityIndicator color="#4ade80" className="mt-10" />
+        ) : (
+          <View className="flex-row flex-wrap px-4 mb-6">
+            {cards.map(s => (
+              <View key={s.label} className="w-1/2 p-1" testID={`stat-${s.label}`}>
+                <Card variant="flat" className="p-4 items-start gap-2">
+                  <View className="w-10 h-10 rounded-xl items-center justify-center" style={{ backgroundColor: s.color + '22' }}>
+                    <Ionicons name={s.icon as any} size={20} color={s.color} />
                   </View>
-                  <Text style={[styles.statNum, { color: s.color }]}>{s.value}</Text>
-                  <Text style={styles.statLabel}>{s.label}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+                  <Text className="text-xl font-black" style={{ color: s.color }}>{s.value}</Text>
+                  <Text className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">{s.label}</Text>
+                </Card>
+              </View>
+            ))}
+          </View>
+        )}
 
-          {/* Quick Info */}
-          <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>📋 Community Info</Text>
-            <Text style={styles.infoRow2}>Manager: {community?.manager_name}</Text>
-            <Text style={styles.infoRow2}>Phone: {community?.manager_phone}</Text>
+        {/* Quick Info */}
+        <Card variant="elevated" className="mx-5 mb-6" title="📋 Community Info">
+          <View className="gap-2 mt-1">
+            <Text className="text-sm text-slate-600 dark:text-slate-400 font-medium">Manager: {community?.manager_name}</Text>
+            <Text className="text-sm text-slate-600 dark:text-slate-400 font-medium">Phone: {community?.manager_phone}</Text>
             {paymentSummary ? (
-              <Text style={styles.infoRow2}>
+              <Text className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                 Payments: {formatCurrency(paymentSummary.total_collected)} collected · {paymentSummary.pct_paid}% paid
               </Text>
             ) : null}
           </View>
+        </Card>
 
-          {/* Recent bookings */}
-          {recent?.length ? (
-            <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>🕒 Recent Bookings</Text>
+        {/* Recent bookings */}
+        {recent?.length ? (
+          <Card variant="elevated" className="mx-5 mb-6" title="🕒 Recent Bookings">
+            <View className="gap-3 mt-1">
               {recent.slice(0, 5).map((b: any) => (
-                <Text key={b.id} style={styles.infoRow2}>
-                  {b.member?.member_name || 'Member'} · {b.slot?.sport || 'Sport'} · Flat {b.household?.flat_number || '-'}
-                </Text>
+                <View key={b.id} className="flex-row items-center justify-between py-2 border-b border-slate-100 dark:border-white/5 last:border-0">
+                  <View>
+                    <Text className="text-sm font-bold text-slate-900 dark:text-white">{b.member?.member_name || 'Member'}</Text>
+                    <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{b.slot?.sport || 'Sport'}</Text>
+                  </View>
+                  <View className="bg-slate-100 dark:bg-primary-dark px-2 py-1 rounded-lg">
+                    <Text className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Flat {b.household?.flat_number || '-'}</Text>
+                  </View>
+                </View>
               ))}
             </View>
-          ) : null}
-
-          <View style={{ height: 24 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+          </Card>
+        ) : null}
+      </ScrollView>
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
-  greeting: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  community: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary, marginTop: 4 },
-  location: { fontSize: 13, color: COLORS.textSecondary, marginTop: 3 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, marginBottom: 20 },
-  statCard: {
-    width: '47%', backgroundColor: COLORS.card, borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: COLORS.cardBorder, gap: 6,
-  },
-  iconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  statNum: { fontSize: 22, fontWeight: '800' },
-  statLabel: { fontSize: 12, color: COLORS.textSecondary },
-  infoCard: { marginHorizontal: 20, backgroundColor: COLORS.card, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.cardBorder },
-  infoTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 8 },
-  infoRow2: { fontSize: 13, color: COLORS.textSecondary, marginTop: 4 },
-});

@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, FlatList, TouchableOpacity,
   Alert, ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, STATUS_COLORS } from '../../src/constants/colors';
+import { STATUS_COLORS } from '../../src/constants/colors';
 import { getSportIcon, formatDate } from '../../src/utils';
 import { Booking } from '../../src/types';
 import { cancelBooking as cancelBookingApi, getMyBookings } from '../../src/api/bookings';
+import { ScreenLayout, Card } from '../../src/components';
 
 const FILTERS = ['Upcoming', 'Past', 'Cancelled'];
 
@@ -28,8 +28,8 @@ export default function MyBookings() {
     onError: (e: any) => Alert.alert('Error', e.message),
   });
 
-  const filtered = bookings.filter(b => {
-    if (activeFilter === 'Upcoming') return b.status === 'Confirmed';
+  const filtered = (Array.isArray(bookings) ? bookings : []).filter(b => {
+    if (activeFilter === 'Upcoming') return b.status === 'Confirmed' || b.status === 'Pending';
     if (activeFilter === 'Past') return b.status === 'Attended' || b.status === 'NoShow';
     if (activeFilter === 'Cancelled') return b.status === 'Cancelled';
     return true;
@@ -43,104 +43,74 @@ export default function MyBookings() {
   };
 
   const renderBooking = ({ item: b }: { item: Booking }) => {
-    const statusColor = STATUS_COLORS[b.status] || COLORS.textMuted;
+    const statusColor = STATUS_COLORS[b.status] || '#94a3b8';
     return (
-      <View style={styles.card} testID={`booking-card-${b.id}`}>
-        <View style={styles.cardLeft}>
-          <View style={styles.sportBox}>
-            <Text style={styles.sportEmoji}>{getSportIcon(b.slot?.sport || '')}</Text>
+      <Card className="mb-3 p-4" testID={`booking-card-${b.id}`}>
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row gap-3 flex-1">
+            <View className="w-11 h-11 rounded-xl bg-accent/20 items-center justify-center">
+              <Text className="text-xl">{getSportIcon(b.slot?.sport || '')}</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-[15px] font-bold text-slate-900 dark:text-white">{b.slot?.sport}</Text>
+              <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">👤 {b.member?.member_name}</Text>
+              <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">🏋️ {b.trainer?.name}</Text>
+              <Text className="text-xs font-bold text-accent mt-1.5">📅 {formatDate(b.session_date)}  ·  {b.slot?.slot_time}</Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.sportName}>{b.slot?.sport}</Text>
-            <Text style={styles.memberName}>👤 {b.member?.member_name}</Text>
-            <Text style={styles.trainerName}>🏋️ {b.trainer?.name}</Text>
-            <Text style={styles.dateText}>📅 {formatDate(b.session_date)}  ·  {b.slot?.slot_time}</Text>
+          <View className="items-end gap-2">
+            <View className="px-2.5 py-1 rounded-full border" style={{ backgroundColor: statusColor + '22', borderColor: statusColor }}>
+              <Text className="text-[10px] font-bold uppercase" style={{ color: statusColor }}>{b.status}</Text>
+            </View>
+            {b.status === 'Confirmed' && (
+              <TouchableOpacity className="p-1" onPress={() => confirmCancel(b.id)} testID={`cancel-booking-${b.id}`}>
+                <Ionicons name="close-circle-outline" size={22} color="#ef4444" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-        <View style={styles.cardRight}>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor }]}>
-            <Text style={[styles.statusText, { color: statusColor }]}>{b.status}</Text>
-          </View>
-          {b.status === 'Confirmed' && (
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => confirmCancel(b.id)} testID={`cancel-booking-${b.id}`}>
-              <Ionicons name="close-circle-outline" size={22} color={COLORS.error} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      </Card>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <Text style={styles.title} testID="my-bookings-title">My Bookings</Text>
+    <ScreenLayout title="My Bookings">
+      {/* Filter Tabs */}
+      <View className="flex-row px-5 gap-2 mb-6 mt-2">
+        {FILTERS.map(f => (
+          <TouchableOpacity
+            key={f}
+            className={`flex-1 py-3 rounded-2xl border items-center ${activeFilter === f ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-surface border-slate-200 dark:border-white/10'}`}
+            onPress={() => setActiveFilter(f)}
+            testID={`filter-tab-${f}`}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeFilter === f }}
+          >
+            <Text className={`text-[13px] font-bold ${activeFilter === f ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}`}>{f}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-        {/* Filter Tabs */}
-        <View style={styles.filterRow}>
-          {FILTERS.map(f => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.filterTab, activeFilter === f && styles.filterTabActive]}
-              onPress={() => setActiveFilter(f)}
-              testID={`filter-tab-${f}`}
-            >
-              <Text style={[styles.filterTabText, activeFilter === f && styles.filterTabTextActive]}>{f}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {isLoading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} />
-        ) : (
-          <FlatList
-            data={filtered}
-            renderItem={renderBooking}
-            keyExtractor={b => b.id}
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={
-              <View style={styles.empty}>
-                <Ionicons name="calendar-outline" size={48} color={COLORS.textMuted} />
-                <Text style={styles.emptyText}>No {activeFilter.toLowerCase()} bookings</Text>
+      {isLoading ? (
+        <ActivityIndicator className="mt-10" color="#4ade80" />
+      ) : (
+        <FlatList
+          data={filtered}
+          renderItem={renderBooking}
+          keyExtractor={b => b.id}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+          ListEmptyComponent={
+            <View className="items-center pt-20 gap-4">
+              <View className="w-20 h-20 rounded-full bg-slate-50 dark:bg-surface items-center justify-center border border-slate-100 dark:border-white/5">
+                <Ionicons name="calendar-outline" size={40} color="#94a3b8" />
               </View>
-            }
-          />
-        )}
-      </SafeAreaView>
-    </View>
+              <Text className="text-slate-500 dark:text-slate-400 text-base font-medium">No {activeFilter.toLowerCase()} bookings</Text>
+            </View>
+          }
+        />
+      )}
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  title: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-  filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, marginBottom: 12 },
-  filterTab: {
-    flex: 1, paddingVertical: 10, borderRadius: 12,
-    backgroundColor: COLORS.card, alignItems: 'center',
-    borderWidth: 1, borderColor: COLORS.border,
-  },
-  filterTabActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  filterTabText: { color: COLORS.textSecondary, fontWeight: '600', fontSize: 13 },
-  filterTabTextActive: { color: COLORS.primaryDark },
-  list: { paddingHorizontal: 20, paddingBottom: 24 },
-  card: {
-    backgroundColor: COLORS.card, borderRadius: 16, padding: 14,
-    marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', borderWidth: 1, borderColor: COLORS.cardBorder,
-  },
-  cardLeft: { flexDirection: 'row', gap: 12, flex: 1 },
-  sportBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
-  sportEmoji: { fontSize: 22 },
-  sportName: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  memberName: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  trainerName: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  dateText: { fontSize: 12, color: COLORS.accent, marginTop: 4 },
-  cardRight: { alignItems: 'flex-end', gap: 8 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  cancelBtn: { padding: 4 },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { color: COLORS.textSecondary, fontSize: 15 },
-});
+

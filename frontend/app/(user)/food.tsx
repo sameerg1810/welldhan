@@ -1,22 +1,25 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, FlatList, TouchableOpacity,
   Image, Switch, ActivityIndicator, Alert, Modal, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../src/constants/colors';
+import { useColorScheme } from 'nativewind';
 import { FoodPreference } from '../../src/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getMyFoodPreferences, pauseAllFood, toggleFoodItem, updateFoodPreference } from '../../src/api/food';
+import { getMyFoodPreferences, pauseAllFood, toggleFoodItem } from '../../src/api/food';
+import { ScreenLayout, Card, Button } from '../../src/components';
 
 const CATEGORIES = ['All', 'Vegetable', 'Oil', 'Grain', 'Dairy', 'Spice'];
 
 export default function FoodScreen() {
   const qc = useQueryClient();
   const router = useRouter();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  
   const [filter, setFilter] = useState('All');
   const [pauseModal, setPauseModal] = useState(false);
   const [pauseDate, setPauseDate] = useState(new Date());
@@ -57,162 +60,136 @@ export default function FoodScreen() {
     const item = pref.food_item;
     if (!item) return null;
     return (
-      <View style={styles.foodRow} testID={`food-item-${pref.id}`}>
-        <Image
-          source={{ uri: item.image_url }}
-          style={styles.foodImg}
-          defaultSource={{ uri: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&q=80' }}
-        />
-        <View style={styles.foodMeta}>
-          <Text style={styles.foodName}>{item.name}</Text>
-          <Text style={styles.foodCat}>{item.category}  ·  {pref.default_quantity} {pref.unit}</Text>
-          <Text style={styles.foodPrice}>₹{item.price_per_unit}/{item.unit}</Text>
-          {item.is_organic && <View style={styles.organicBadge}><Text style={styles.organicText}>🌿 Organic</Text></View>}
+      <Card 
+        className="mb-2.5 p-3" 
+        testID={`food-item-${pref.id}`}
+      >
+        <View className="flex-row items-center gap-3">
+          <Image
+            source={{ uri: item.image_url }}
+            className="w-[52px] h-[52px] rounded-xl"
+            defaultSource={{ uri: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&q=80' }}
+          />
+          <View className="flex-1">
+            <Text className="text-[15px] font-bold text-slate-900 dark:text-white">{item.name}</Text>
+            <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.category}  ·  {pref.default_quantity} {pref.unit}</Text>
+            <Text className="text-xs font-semibold text-accent mt-1">₹{item.price_per_unit}/{item.unit}</Text>
+            {item.is_organic && <View className="mt-1"><Text className="text-[10px] text-green-500 font-bold uppercase tracking-wider">🌿 Organic</Text></View>}
+          </View>
+          <Switch
+            value={pref.is_selected}
+            onValueChange={() => toggle(pref)}
+            trackColor={{ false: '#e2e8f0', true: '#4ade80' }}
+            thumbColor={pref.is_selected ? '#fff' : '#f4f3f4'}
+            testID={`toggle-${pref.id}`}
+            accessibilityLabel={`Select ${item.name} for delivery`}
+          />
         </View>
-        <Switch
-          value={pref.is_selected}
-          onValueChange={() => toggle(pref)}
-          trackColor={{ false: '#374151', true: COLORS.accent + '66' }}
-          thumbColor={pref.is_selected ? COLORS.accent : '#6b7280'}
-          testID={`toggle-${pref.id}`}
-        />
-      </View>
+      </Card>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title} testID="food-basket-title">Your Food Basket</Text>
-            <Text style={styles.deliveryNote}>🚚 Delivering tomorrow at 7:00 AM</Text>
-          </View>
-          <TouchableOpacity style={styles.historyBtn} onPress={() => router.push('/(user)/food-history')} testID="food-history-btn">
-            <Ionicons name="time-outline" size={22} color={COLORS.accent} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Category Filters */}
+    <ScreenLayout 
+      title="Your Food Basket" 
+      subtitle="🚚 Delivering tomorrow at 7:00 AM"
+      headerContent={
+        <TouchableOpacity 
+          className="w-11 h-11 rounded-full bg-slate-50 dark:bg-surface items-center justify-center border border-slate-100 dark:border-white/5" 
+          onPress={() => router.push('/(user)/food-history')} 
+          testID="food-history-btn"
+        >
+          <Ionicons name="time-outline" size={22} color="#4ade80" />
+        </TouchableOpacity>
+      }
+    >
+      {/* Category Filters */}
+      <View className="h-12 mt-2">
         <FlatList
           horizontal
           data={CATEGORIES}
           showsHorizontalScrollIndicator={false}
-          style={styles.filterScroll}
-          contentContainerStyle={styles.filterContent}
+          className="px-5"
+          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
           keyExtractor={c => c}
           renderItem={({ item: cat }) => (
             <TouchableOpacity
-              style={[styles.catChip, filter === cat && styles.catChipActive]}
+              className={`px-4 py-2 rounded-full border ${filter === cat ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-surface border-slate-200 dark:border-white/10'}`}
               onPress={() => setFilter(cat)}
               testID={`cat-${cat}`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: filter === cat }}
             >
-              <Text style={[styles.catText, filter === cat && styles.catTextActive]}>{cat}</Text>
+              <Text className={`text-[12px] font-bold ${filter === cat ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}`}>{cat}</Text>
             </TouchableOpacity>
           )}
         />
+      </View>
 
-        {isLoading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} />
-        ) : (
-          <FlatList
-            data={filtered}
-            renderItem={renderItem}
-            keyExtractor={p => p.id}
-            contentContainerStyle={styles.list}
-          />
-        )}
+      {isLoading ? (
+        <ActivityIndicator className="mt-10" color="#4ade80" />
+      ) : (
+        <FlatList
+          data={filtered}
+          renderItem={renderItem}
+          keyExtractor={p => p.id}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16 }}
+        />
+      )}
 
-        {/* Bottom Summary */}
-        <View style={styles.bottomBar} testID="food-summary">
-          <View>
-            <Text style={styles.summaryText}>{selectedCount} items selected</Text>
-            <Text style={styles.summaryNote}>Delivering tomorrow 7:00 AM</Text>
-          </View>
-          <TouchableOpacity style={styles.pauseBtn} onPress={() => setPauseModal(true)} testID="pause-deliveries-btn">
-            <Ionicons name="pause-circle-outline" size={18} color={COLORS.warning} />
-            <Text style={styles.pauseText}>Pause</Text>
-          </TouchableOpacity>
+      {/* Bottom Summary */}
+      <View className="flex-row justify-between items-center px-6 py-5 bg-white dark:bg-primary-dark border-t border-slate-100 dark:border-white/5 shadow-2xl" testID="food-summary">
+        <View>
+          <Text className="text-[16px] font-black text-slate-900 dark:text-white">{selectedCount} items selected</Text>
+          <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Delivering tomorrow 7:00 AM</Text>
         </View>
-      </SafeAreaView>
+        <Button
+          label="Pause"
+          variant="danger"
+          size="sm"
+          icon="pause-circle-outline"
+          onPress={() => setPauseModal(true)}
+          testID="pause-deliveries-btn"
+          className="px-4"
+        />
+      </View>
 
       {/* Pause Modal */}
       <Modal visible={pauseModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Pause Deliveries Until</Text>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white dark:bg-surface rounded-t-[32px] p-6 pb-10 shadow-2xl">
+            <View className="w-10 h-1 bg-slate-200 dark:bg-white/10 rounded-full self-center mb-6" />
+            <Text className="text-xl font-black text-slate-900 dark:text-white mb-4">Pause Deliveries Until</Text>
             <DateTimePicker
               value={pauseDate}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(_, d) => d && setPauseDate(d)}
               minimumDate={new Date()}
-              style={{ marginBottom: 16 }}
+              themeVariant={isDark ? 'dark' : 'light'}
+              style={{ marginBottom: 24 }}
             />
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setPauseModal(false)} testID="cancel-pause-btn">
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.confirmBtn}
+            <View className="flex-row gap-3">
+              <Button 
+                label="Cancel" 
+                variant="secondary" 
+                className="flex-1" 
+                onPress={() => setPauseModal(false)} 
+                testID="cancel-pause-btn"
+              />
+              <Button
+                label="Pause All"
+                variant="danger"
+                className="flex-[2]"
                 onPress={() => pauseAll(pauseDate.toISOString().split('T')[0])}
                 testID="confirm-pause-btn"
-              >
-                <Text style={styles.confirmText}>Pause All</Text>
-              </TouchableOpacity>
+              />
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 },
-  title: { fontSize: 24, fontWeight: '800', color: COLORS.textPrimary },
-  deliveryNote: { fontSize: 13, color: COLORS.accent, marginTop: 4 },
-  historyBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center' },
-  filterScroll: { maxHeight: 46 },
-  filterContent: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
-  catChip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
-  },
-  catChipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  catText: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' },
-  catTextActive: { color: COLORS.primaryDark },
-  list: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16 },
-  foodRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.card, borderRadius: 14, padding: 12,
-    marginBottom: 10, gap: 12, borderWidth: 1, borderColor: COLORS.cardBorder,
-  },
-  foodImg: { width: 52, height: 52, borderRadius: 10 },
-  foodMeta: { flex: 1 },
-  foodName: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  foodCat: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  foodPrice: { fontSize: 12, color: COLORS.accent, marginTop: 3 },
-  organicBadge: { marginTop: 4 },
-  organicText: { fontSize: 11, color: '#22c55e' },
-  bottomBar: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingVertical: 14,
-    backgroundColor: '#12141d', borderTopWidth: 1, borderTopColor: COLORS.border,
-  },
-  summaryText: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  summaryNote: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  pauseBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(245,158,11,0.1)', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' },
-  pauseText: { color: COLORS.warning, fontWeight: '600', fontSize: 13 },
-  modalOverlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: '#1a1a2e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 16 },
-  modalActions: { flexDirection: 'row', gap: 12 },
-  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
-  cancelText: { color: COLORS.textSecondary, fontWeight: '600' },
-  confirmBtn: { flex: 2, backgroundColor: COLORS.warning, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  confirmText: { color: '#000', fontWeight: '800', fontSize: 15 },
-});
+

@@ -1,11 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../src/api/client';
-import { COLORS } from '../../src/constants/colors';
 import { formatCurrency } from '../../src/utils';
 import { useAuthStore } from '../../src/store/authStore';
+import { ScreenLayout, Card, Button } from '../../src/components';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
@@ -42,7 +41,7 @@ export default function AdminDashboard() {
   };
 
   const stats = summary ? [
-    { icon: 'business-outline', label: 'Communities', value: summary.communities, color: COLORS.accent },
+    { icon: 'business-outline', label: 'Communities', value: summary.communities, color: '#4ade80' },
     { icon: 'home-outline', label: 'Total Families', value: summary.total_families, color: '#22c55e' },
     { icon: 'fitness-outline', label: 'Active Trainers', value: summary.active_trainers, color: '#3b82f6' },
     { icon: 'calendar-outline', label: 'Total Bookings', value: summary.total_bookings, color: '#a78bfa' },
@@ -52,97 +51,92 @@ export default function AdminDashboard() {
   ] : [];
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.appName}>WELLDHAN</Text>
-              <Text style={styles.title} testID="admin-title">Admin Dashboard</Text>
-            </View>
-            <View style={styles.adminBadge}>
-              <Ionicons name="shield" size={16} color={COLORS.accent} />
-              <Text style={styles.adminText}>ADMIN</Text>
-            </View>
-          </View>
+    <ScreenLayout 
+      headerContent={
+        <View className="bg-accent/10 px-3 py-1.5 rounded-full border border-accent/30 flex-row items-center gap-2">
+          <Ionicons name="shield-checkmark" size={14} color="#4ade80" />
+          <Text className="text-accent text-[10px] font-black uppercase tracking-widest">Admin</Text>
+        </View>
+      }
+    >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+        <View className="px-5 pt-2 mb-6">
+          <Text className="text-[11px] font-black text-accent uppercase tracking-[2px]">WELLDHAN</Text>
+          <Text className="text-2xl font-black text-slate-900 dark:text-white mt-1">Admin Dashboard</Text>
+        </View>
 
-          {/* Stats */}
-          {isLoading ? (
-            <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
-          ) : (
-            <View style={styles.statsGrid} testID="admin-stats">
-              {stats.map(s => (
-                <View key={s.label} style={styles.statCard} testID={`admin-stat-${s.label}`}>
-                  <View style={[styles.iconBox, { backgroundColor: s.color + '22' }]}>
-                    <Ionicons name={s.icon as any} size={22} color={s.color} />
+        {/* Stats */}
+        {isLoading ? (
+          <ActivityIndicator color="#4ade80" className="mt-10" />
+        ) : (
+          <View className="flex-row flex-wrap px-4 mb-6" testID="admin-stats">
+            {stats.map(s => (
+              <View key={s.label} className="w-1/2 p-1" testID={`admin-stat-${s.label}`}>
+                <Card variant="flat" className="p-4 items-start gap-2">
+                  <View className="w-10 h-10 rounded-xl items-center justify-center" style={{ backgroundColor: s.color + '22' }}>
+                    <Ionicons name={s.icon as any} size={20} color={s.color} />
                   </View>
-                  <Text style={[styles.statNum, { color: s.color }]}>{s.value}</Text>
-                  <Text style={styles.statLabel}>{s.label}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Admin Actions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Admin Actions</Text>
-            <TouchableOpacity style={styles.actionRow} onPress={handleReseed} testID="seed-data-btn">
-              <Ionicons name="refresh-outline" size={20} color={COLORS.accent} />
-              <Text style={styles.actionLabel}>Seed Demo Data</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionRow, { borderBottomWidth: 0 }]} onPress={handleLogout} testID="admin-logout-btn">
-              <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
-              <Text style={[styles.actionLabel, { color: COLORS.error }]}>Sign Out</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
-            </TouchableOpacity>
+                  <Text className="text-xl font-black" style={{ color: s.color }}>{s.value}</Text>
+                  <Text className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">{s.label}</Text>
+                </Card>
+              </View>
+            ))}
           </View>
+        )}
 
-          {/* Test Credentials */}
-          <View style={styles.credsCard} testID="test-credentials">
-            <Text style={styles.credsTitle}>🔑 Test Credentials</Text>
+        {/* Admin Actions */}
+        <View className="px-5 mb-8">
+          <Text className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 ml-1">Admin Actions</Text>
+          <Card className="p-0 overflow-hidden">
+            <TouchableOpacity 
+              className="flex-row items-center gap-4 p-4 border-b border-slate-100 dark:border-white/5" 
+              onPress={handleReseed} 
+              testID="seed-data-btn"
+            >
+              <View className="w-10 h-10 rounded-xl bg-accent/10 items-center justify-center">
+                <Ionicons name="refresh-outline" size={20} color="#4ade80" />
+              </View>
+              <Text className="flex-1 text-[15px] font-bold text-slate-900 dark:text-white">Seed Demo Data</Text>
+              <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              className="flex-row items-center gap-4 p-4" 
+              onPress={handleLogout} 
+              testID="admin-logout-btn"
+            >
+              <View className="w-10 h-10 rounded-xl bg-red-500/10 items-center justify-center">
+                <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+              </View>
+              <Text className="flex-1 text-[15px] font-bold text-red-500">Sign Out</Text>
+              <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+            </TouchableOpacity>
+          </Card>
+        </View>
+
+        {/* Test Credentials */}
+        <View className="px-5 mb-8" testID="test-credentials">
+          <Text className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 ml-1">🔑 Test Credentials</Text>
+          <Card variant="accented" className="p-4">
             {[
               { role: 'Admin', phone: '9000000001' },
               { role: 'Manager', phone: '9000000002' },
               { role: 'Trainer', phone: '9100000001' },
               { role: 'User', phone: '9876543210' },
             ].map(c => (
-              <View key={c.role} style={styles.credRow}>
-                <Text style={styles.credRole}>{c.role}:</Text>
-                <Text style={styles.credPhone}>{c.phone}</Text>
+              <View key={c.role} className="flex-row justify-between py-1.5">
+                <Text className="text-[13px] font-bold text-slate-500 dark:text-slate-400">{c.role}:</Text>
+                <Text className="text-[13px] font-black text-slate-900 dark:text-white">{c.phone}</Text>
               </View>
             ))}
-          </View>
-          <Text style={styles.version}>WELLDHAN v1.0.0  ·  com.welldhan.app</Text>
-          <View style={{ height: 24 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+          </Card>
+        </View>
+
+        <Text className="text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mb-6">
+          WELLDHAN v1.0.0  ·  com.welldhan.app
+        </Text>
+      </ScrollView>
+    </ScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
-  appName: { fontSize: 13, fontWeight: '800', color: COLORS.accent, letterSpacing: 1 },
-  title: { fontSize: 24, fontWeight: '800', color: COLORS.textPrimary, marginTop: 4 },
-  adminBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(74,222,128,0.12)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(74,222,128,0.3)' },
-  adminText: { color: COLORS.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, marginBottom: 24 },
-  statCard: { width: '47%', backgroundColor: COLORS.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.cardBorder, gap: 6 },
-  iconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  statNum: { fontSize: 22, fontWeight: '800' },
-  statLabel: { fontSize: 12, color: COLORS.textSecondary },
-  section: { marginHorizontal: 20, backgroundColor: COLORS.card, borderRadius: 14, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: COLORS.cardBorder },
-  sectionTitle: { fontSize: 13, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6 },
-  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  actionLabel: { flex: 1, fontSize: 15, color: COLORS.textPrimary, fontWeight: '500' },
-  credsCard: { marginHorizontal: 20, backgroundColor: 'rgba(74,222,128,0.05)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: 'rgba(74,222,128,0.2)', marginBottom: 16 },
-  credsTitle: { fontSize: 14, fontWeight: '700', color: COLORS.accent, marginBottom: 10 },
-  credRow: { flexDirection: 'row', gap: 12, marginBottom: 6 },
-  credRole: { fontSize: 13, color: COLORS.textSecondary, width: 70 },
-  credPhone: { fontSize: 13, color: COLORS.textPrimary, fontWeight: '600' },
-  version: { textAlign: 'center', color: COLORS.textMuted, fontSize: 12 },
-});

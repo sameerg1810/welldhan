@@ -1,21 +1,25 @@
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Modal, TextInput, Alert, ActivityIndicator,
+  View, Text, FlatList, TouchableOpacity,
+  Modal, Alert, ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
+import { useColorScheme } from 'nativewind';
+import { SPORT_COLORS } from '../../src/constants/colors';
 import { getSportIcon, getRelationColor } from '../../src/utils';
 import { Member } from '../../src/types';
 import { addMember as addMemberApi, deleteMember as deleteMemberApi, getMyMembers, updateMember as updateMemberApi } from '../../src/api/households';
+import { ScreenLayout, Card, Button, Input } from '../../src/components';
 
 const SPORTS = ['Badminton', 'Yoga', 'Karate', 'Swimming'];
 const RELATIONS = ['Self', 'Spouse', 'Child', 'Parent'];
 
 export default function MembersScreen() {
   const qc = useQueryClient();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  
   const [addModal, setAddModal] = useState(false);
   const [editModal, setEditModal] = useState<Member | null>(null);
   const [form, setForm] = useState({ member_name: '', age: '', relation: 'Spouse', assigned_sport: 'Badminton', phone: '' });
@@ -31,7 +35,7 @@ export default function MembersScreen() {
     onError: (e: any) => Alert.alert('Error', e.message),
   });
 
-  const { mutate: updateMember } = useMutation({
+  const { mutate: updateMember, isPending: updating } = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => updateMemberApi(id, data) as any,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['members'] }); setEditModal(null); },
     onError: (e: any) => Alert.alert('Error', e.message),
@@ -51,179 +55,240 @@ export default function MembersScreen() {
   };
 
   const renderMember = ({ item: m }: { item: Member }) => (
-    <View style={styles.card} testID={`member-card-${m.id}`}>
-      <View style={styles.cardLeft}>
-        <View style={[styles.avatar, { backgroundColor: (SPORT_COLORS[m.assigned_sport] || COLORS.accent) + '22' }]}>
-          <Text style={styles.avatarText}>{m.member_name[0]}</Text>
-        </View>
-        <View>
-          <Text style={styles.memberName}>{m.member_name}
-            {m.is_primary ? <Text style={styles.primary}> (Primary)</Text> : null}
-          </Text>
-          <Text style={styles.age}>Age {m.age}</Text>
-          <View style={styles.tags}>
-            <View style={[styles.tag, { backgroundColor: getRelationColor(m.relation) + '22' }]}>
-              <Text style={[styles.tagText, { color: getRelationColor(m.relation) }]}>{m.relation}</Text>
+    <Card className="mb-3 p-4" testID={`member-card-${m.id}`}>
+      <View className="flex-row justify-between items-center">
+        <View className="flex-row items-center gap-4 flex-1">
+          <View 
+            className="w-[52px] h-[52px] rounded-full items-center justify-center border-2 border-accent/20"
+            style={{ backgroundColor: (SPORT_COLORS[m.assigned_sport] || '#4ade80') + '22' }}
+          >
+            <Text className="text-xl font-black text-slate-900 dark:text-white">{m.member_name[0]}</Text>
+          </View>
+          <View className="flex-1">
+            <View className="flex-row items-center gap-1.5 flex-wrap">
+              <Text className="text-base font-bold text-slate-900 dark:text-white">{m.member_name}</Text>
+              {m.is_primary && <View className="bg-accent/10 px-2 py-0.5 rounded-lg"><Text className="text-[10px] text-accent font-black uppercase tracking-wider">Primary</Text></View>}
             </View>
-            <View style={[styles.tag, { backgroundColor: (SPORT_COLORS[m.assigned_sport] || COLORS.accent) + '22' }]}>
-              <Text style={[styles.tagText, { color: SPORT_COLORS[m.assigned_sport] || COLORS.accent }]}>
-                {getSportIcon(m.assigned_sport)} {m.assigned_sport}
-              </Text>
+            <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Age {m.age}</Text>
+            <View className="flex-row gap-2 mt-2 flex-wrap">
+              <View className="px-2 py-1 rounded-lg" style={{ backgroundColor: getRelationColor(m.relation) + '22' }}>
+                <Text className="text-[10px] font-bold" style={{ color: getRelationColor(m.relation) }}>{m.relation}</Text>
+              </View>
+              <View className="px-2 py-1 rounded-lg" style={{ backgroundColor: (SPORT_COLORS[m.assigned_sport] || '#4ade80') + '22' }}>
+                <Text className="text-[10px] font-bold" style={{ color: SPORT_COLORS[m.assigned_sport] || '#4ade80' }}>
+                  {getSportIcon(m.assigned_sport)} {m.assigned_sport}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <TouchableOpacity onPress={() => setEditModal(m)} testID={`edit-member-${m.id}`}>
-          <Ionicons name="pencil-outline" size={20} color={COLORS.textSecondary} />
-        </TouchableOpacity>
-        {!m.is_primary && (
-          <TouchableOpacity
-            onPress={() => Alert.alert('Remove Member', 'This will deactivate the member.', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Remove', style: 'destructive', onPress: () => softDeleteMember(m.id) },
-            ])}
-            testID={`delete-member-${m.id}`}
-          >
-            <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+        <View className="flex-row gap-4 items-center pl-2">
+          <TouchableOpacity onPress={() => setEditModal(m)} testID={`edit-member-${m.id}`}>
+            <Ionicons name="pencil-outline" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
           </TouchableOpacity>
-        )}
+          {!m.is_primary && (
+            <TouchableOpacity
+              onPress={() => Alert.alert('Remove Member', 'This will deactivate the member.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Remove', style: 'destructive', onPress: () => softDeleteMember(m.id) },
+              ])}
+              testID={`delete-member-${m.id}`}
+            >
+              <Ionicons name="trash-outline" size={20} color="#ef4444" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
+    </Card>
   );
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={styles.headerRow}>
-          <Text style={styles.title} testID="members-title">Family Members</Text>
-          <TouchableOpacity style={styles.addBtn} onPress={() => setAddModal(true)} testID="add-member-btn">
-            <Ionicons name="add" size={22} color={COLORS.primaryDark} />
-          </TouchableOpacity>
-        </View>
-
-        {isLoading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} />
-        ) : (
-          <FlatList
-            data={members}
-            renderItem={renderMember}
-            keyExtractor={m => m.id}
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={
-              <View style={styles.empty}>
-                <Ionicons name="people-outline" size={48} color={COLORS.textMuted} />
-                <Text style={styles.emptyText}>No members added</Text>
+    <ScreenLayout 
+      title="Family Members"
+      headerContent={
+        <TouchableOpacity 
+          className="w-11 h-11 rounded-full bg-accent items-center justify-center shadow-lg shadow-accent/40" 
+          onPress={() => setAddModal(true)} 
+          testID="add-member-btn"
+        >
+          <Ionicons name="add" size={26} color="#0d1b13" />
+        </TouchableOpacity>
+      }
+    >
+      {isLoading ? (
+        <ActivityIndicator className="mt-10" color="#4ade80" />
+      ) : (
+        <FlatList
+          data={members}
+          renderItem={renderMember}
+          keyExtractor={m => m.id}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24 }}
+          ListEmptyComponent={
+            <View className="items-center pt-20 gap-4">
+              <View className="w-20 h-20 rounded-full bg-slate-50 dark:bg-surface items-center justify-center border border-slate-100 dark:border-white/5">
+                <Ionicons name="people-outline" size={40} color="#94a3b8" />
               </View>
-            }
-          />
-        )}
-      </SafeAreaView>
+              <Text className="text-slate-500 dark:text-slate-400 text-base font-medium">No members added yet</Text>
+            </View>
+          }
+        />
+      )}
 
       {/* Add Member Modal */}
       <Modal visible={addModal} transparent animationType="slide">
-        <View style={styles.overlay}>
-          <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Add Member</Text>
-            <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor={COLORS.textMuted}
-              value={form.member_name} onChangeText={v => setForm(f => ({ ...f, member_name: v }))}
-              testID="member-name-input" />
-            <TextInput style={styles.input} placeholder="Age" placeholderTextColor={COLORS.textMuted}
-              keyboardType="number-pad" value={form.age} onChangeText={v => setForm(f => ({ ...f, age: v }))}
-              testID="member-age-input" />
-            <Text style={styles.selectLabel}>Relation</Text>
-            <View style={styles.selectRow}>
-              {RELATIONS.map(r => (
-                <TouchableOpacity key={r} style={[styles.selectChip, form.relation === r && styles.selectChipActive]} onPress={() => setForm(f => ({ ...f, relation: r }))} testID={`relation-${r}`}>
-                  <Text style={[styles.selectText, form.relation === r && styles.selectTextActive]}>{r}</Text>
-                </TouchableOpacity>
-              ))}
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white dark:bg-surface rounded-t-[32px] p-6 pb-10 shadow-2xl">
+            <View className="w-10 h-1 bg-slate-200 dark:bg-white/10 rounded-full self-center mb-6" />
+            <Text className="text-xl font-black text-slate-900 dark:text-white mb-6">Add Family Member</Text>
+            
+            <Input 
+              label="Full Name"
+              placeholder="Full Name" 
+              value={form.member_name} 
+              onChangeText={v => setForm(f => ({ ...f, member_name: v }))}
+              testID="member-name-input" 
+            />
+
+            <Input 
+              label="Age"
+              placeholder="Age" 
+              keyboardType="number-pad" 
+              value={form.age} 
+              onChangeText={v => setForm(f => ({ ...f, age: v }))}
+              testID="member-age-input" 
+            />
+
+            <View className="mb-6">
+              <Text className="text-[13px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase mb-3 ml-1">Relation</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {RELATIONS.map(r => (
+                  <TouchableOpacity 
+                    key={r} 
+                    className={`px-4 py-2 rounded-xl border ${form.relation === r ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-primary-dark border-slate-200 dark:border-white/10'}`} 
+                    onPress={() => setForm(f => ({ ...f, relation: r }))} 
+                    testID={`relation-${r}`}
+                  >
+                    <Text className={`text-[13px] font-bold ${form.relation === r ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}`}>{r}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-            <Text style={styles.selectLabel}>Sport</Text>
-            <View style={styles.selectRow}>
-              {SPORTS.map(s => (
-                <TouchableOpacity key={s} style={[styles.selectChip, form.assigned_sport === s && styles.selectChipActive]} onPress={() => setForm(f => ({ ...f, assigned_sport: s }))} testID={`sport-${s}`}>
-                  <Text style={[styles.selectText, form.assigned_sport === s && styles.selectTextActive]}>{getSportIcon(s)} {s}</Text>
-                </TouchableOpacity>
-              ))}
+
+            <View className="mb-8">
+              <Text className="text-[13px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase mb-3 ml-1">Assigned Sport</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {SPORTS.map(s => (
+                  <TouchableOpacity 
+                    key={s} 
+                    className={`px-4 py-2 rounded-xl border ${form.assigned_sport === s ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-primary-dark border-slate-200 dark:border-white/10'}`} 
+                    onPress={() => setForm(f => ({ ...f, assigned_sport: s }))} 
+                    testID={`sport-${s}`}
+                  >
+                    <Text className={`text-[13px] font-bold ${form.assigned_sport === s ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}`}>{getSportIcon(s)} {s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setAddModal(false); resetForm(); }} testID="cancel-add-member"><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={submitAdd} disabled={adding} testID="submit-add-member">
-                {adding ? <ActivityIndicator color="#000" /> : <Text style={styles.confirmText}>Add</Text>}
-              </TouchableOpacity>
+
+            <View className="flex-row gap-3">
+              <Button 
+                label="Cancel" 
+                variant="secondary" 
+                className="flex-1" 
+                onPress={() => { setAddModal(false); resetForm(); }} 
+              />
+              <Button
+                label="Add Member"
+                variant="primary"
+                className="flex-[2]"
+                onPress={submitAdd}
+                loading={adding}
+                testID="confirm-add-member"
+              />
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Edit Sport Modal */}
-      {editModal && (
-        <Modal visible={!!editModal} transparent animationType="slide">
-          <View style={styles.overlay}>
-            <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>Edit {editModal.member_name}'s Sport</Text>
-              <View style={styles.selectRow}>
-                {SPORTS.map(s => (
-                  <TouchableOpacity key={s} style={[styles.selectChip, editModal.assigned_sport === s && styles.selectChipActive]}
-                    onPress={() => setEditModal({ ...editModal, assigned_sport: s })} testID={`edit-sport-${s}`}>
-                    <Text style={[styles.selectText, editModal.assigned_sport === s && styles.selectTextActive]}>{getSportIcon(s)} {s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModal(null)} testID="cancel-edit"><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity style={styles.confirmBtn} onPress={() => updateMember({ id: editModal.id, data: { assigned_sport: editModal.assigned_sport } })} testID="save-edit">
-                  <Text style={styles.confirmText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+      {/* Edit Member Modal */}
+      <Modal visible={!!editModal} transparent animationType="slide">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white dark:bg-surface rounded-t-[32px] p-6 pb-10 shadow-2xl">
+            <View className="w-10 h-1 bg-slate-200 dark:bg-white/10 rounded-full self-center mb-6" />
+            <Text className="text-xl font-black text-slate-900 dark:text-white mb-6">Edit Family Member</Text>
+            
+            {editModal && (
+              <>
+                <Input 
+                  label="Full Name"
+                  placeholder="Full Name" 
+                  value={editModal.member_name} 
+                  onChangeText={v => setEditModal(m => m ? ({ ...m, member_name: v }) : null)}
+                  testID="edit-member-name-input" 
+                />
+
+                <Input 
+                  label="Age"
+                  placeholder="Age" 
+                  keyboardType="number-pad" 
+                  value={editModal.age.toString()} 
+                  onChangeText={v => setEditModal(m => m ? ({ ...m, age: parseInt(v) || 0 }) : null)}
+                  testID="edit-member-age-input" 
+                />
+
+                <View className="mb-6">
+                  <Text className="text-[13px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase mb-3 ml-1">Relation</Text>
+                  <View className="flex-row flex-wrap gap-2">
+                    {RELATIONS.map(r => (
+                      <TouchableOpacity 
+                        key={r} 
+                        className={`px-4 py-2 rounded-xl border ${editModal.relation === r ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-primary-dark border-slate-200 dark:border-white/10'}`} 
+                        onPress={() => setEditModal(m => m ? ({ ...m, relation: r }) : null)} 
+                        testID={`edit-relation-${r}`}
+                      >
+                        <Text className={`text-[13px] font-bold ${editModal.relation === r ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}`}>{r}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View className="mb-8">
+                  <Text className="text-[13px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase mb-3 ml-1">Assigned Sport</Text>
+                  <View className="flex-row flex-wrap gap-2">
+                    {SPORTS.map(s => (
+                      <TouchableOpacity 
+                        key={s} 
+                        className={`px-4 py-2 rounded-xl border ${editModal.assigned_sport === s ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-primary-dark border-slate-200 dark:border-white/10'}`} 
+                        onPress={() => setEditModal(m => m ? ({ ...m, assigned_sport: s }) : null)} 
+                        testID={`edit-sport-${s}`}
+                      >
+                        <Text className={`text-[13px] font-bold ${editModal.assigned_sport === s ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}`}>{getSportIcon(s)} {s}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View className="flex-row gap-3">
+                  <Button 
+                    label="Cancel" 
+                    variant="secondary" 
+                    className="flex-1" 
+                    onPress={() => setEditModal(null)} 
+                  />
+                  <Button
+                    label="Save Changes"
+                    variant="primary"
+                    className="flex-[2]"
+                    onPress={() => updateMember({ id: editModal.id, data: editModal })}
+                    loading={updating}
+                    testID="confirm-edit-member"
+                  />
+                </View>
+              </>
+            )}
           </View>
-        </Modal>
-      )}
-    </View>
+        </View>
+      </Modal>
+    </ScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-  title: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary },
-  addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
-  list: { paddingHorizontal: 20, paddingBottom: 24 },
-  card: {
-    backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 12,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderWidth: 1, borderColor: COLORS.cardBorder,
-  },
-  cardLeft: { flexDirection: 'row', gap: 12, flex: 1, alignItems: 'center' },
-  avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 20, fontWeight: '700', color: COLORS.textPrimary },
-  memberName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
-  primary: { fontSize: 13, color: COLORS.accent, fontWeight: '400' },
-  age: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
-  tags: { flexDirection: 'row', gap: 6, marginTop: 6 },
-  tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  tagText: { fontSize: 11, fontWeight: '600' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { color: COLORS.textSecondary, fontSize: 15 },
-  overlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#1a1a2e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 12 },
-  sheetTitle: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 8 },
-  input: {
-    backgroundColor: COLORS.inputBg, borderRadius: 12, borderWidth: 1,
-    borderColor: COLORS.border, padding: 14, color: COLORS.textPrimary, fontSize: 15,
-  },
-  selectLabel: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  selectRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  selectChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border },
-  selectChipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  selectText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600' },
-  selectTextActive: { color: COLORS.primaryDark },
-  modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
-  cancelText: { color: COLORS.textSecondary, fontWeight: '600' },
-  confirmBtn: { flex: 2, backgroundColor: COLORS.accent, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  confirmText: { color: COLORS.primaryDark, fontWeight: '800', fontSize: 15 },
-});

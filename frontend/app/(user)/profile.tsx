@@ -1,26 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, ScrollView, TouchableOpacity,
   Alert, Modal, TextInput, Switch, KeyboardAvoidingView,
   Platform, ActivityIndicator, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useColorScheme } from "nativewind";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../src/store/authStore';
-import { COLORS, SPORT_COLORS } from '../../src/constants/colors';
-import { formatCurrency, getInitials } from '../../src/utils';
-import { Household, Member } from '../../src/types';
-import { api } from '../../src/api/client';
+import { SPORT_COLORS } from '../../src/constants/colors';
+import { formatCurrency, getInitials, formatDate } from '../../src/utils';
+import { Household } from '../../src/types';
 import { getMyMembers, updateMyHousehold } from '../../src/api/households';
+import { ScreenLayout, Card, Button, Input } from '../../src/components';
 
 const NOTIF_KEY = 'welldhan_notifications_enabled';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const qc = useQueryClient();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { userData, logout, updateUserData } = useAuthStore();
   const household = userData as Household;
 
@@ -49,10 +52,8 @@ export default function ProfileScreen() {
     mutationFn: (data: { primary_name?: string; primary_email?: string }) =>
       updateMyHousehold(data) as any,
     onSuccess: (updated) => {
-      // Merge nested objects back (package, community) from current userData
       const merged = { ...updated, package: household?.package, community: household?.community };
       updateUserData(merged);
-      // Persist to AsyncStorage
       AsyncStorage.getItem('welldhan_auth').then(raw => {
         if (raw) {
           const stored = JSON.parse(raw);
@@ -127,402 +128,238 @@ export default function ProfileScreen() {
     }
   };
 
-  const joinDate = household?.join_date
-    ? new Date(household.join_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
-    : '';
+  const joinDate = useMemo(() => {
+    if (!household?.join_date) return null;
+    return formatDate(household.join_date, 'MMMM YYYY');
+  }, [household?.join_date]);
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+    <ScreenLayout>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
           {/* ── Avatar + Info ── */}
-          <View style={styles.avatarSection} testID="profile-avatar">
-            <View style={styles.avatarWrapper}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{getInitials(household?.primary_name || 'WD')}</Text>
+          <View className="items-center py-10" testID="profile-avatar">
+            <View className="relative">
+              <View className="w-24 h-24 rounded-full bg-slate-100 dark:bg-surface items-center justify-center border-2 border-accent/30 shadow-lg shadow-accent/20">
+                <Text className="text-3xl font-black text-primary dark:text-accent">
+                  {getInitials(household?.primary_name || 'WD')}
+                </Text>
               </View>
-              <TouchableOpacity style={styles.editAvatarBtn} onPress={openEditModal} testID="edit-avatar-btn">
-                <Ionicons name="pencil" size={14} color={COLORS.primaryDark} />
+              <TouchableOpacity 
+                className="absolute bottom-0 right-0 bg-accent w-8 h-8 rounded-full items-center justify-center border-2 border-white dark:border-primary-dark shadow-sm"
+                onPress={openEditModal} 
+                testID="edit-avatar-btn"
+                accessibilityRole="button"
+                accessibilityLabel="Edit profile photo"
+              >
+                <Ionicons name="pencil" size={14} color="#0d1b13" />
               </TouchableOpacity>
             </View>
-            <Text style={styles.name}>{household?.primary_name}</Text>
-            <View style={styles.flatRow}>
-              <Ionicons name="home-outline" size={14} color={COLORS.accent} />
-              <Text style={styles.flat}>Flat {household?.flat_number}</Text>
+            <Text className="text-2xl font-black text-slate-900 dark:text-white mt-4">{household?.primary_name}</Text>
+            <View className="flex-row items-center mt-1">
+              <Ionicons name="home-outline" size={14} color="#4ade80" />
+              <Text className="text-slate-500 dark:text-slate-400 ml-1.5 font-bold">Flat {household?.flat_number}</Text>
             </View>
-            <Text style={styles.community}>🏢 {household?.community?.name}</Text>
-            {joinDate ? <Text style={styles.joinDate}>Member since {joinDate}</Text> : null}
+            <Text className="text-slate-400 dark:text-slate-500 mt-1 font-semibold">🏢 {household?.community?.name}</Text>
+            {joinDate ? <Text className="text-slate-400 dark:text-slate-600 text-[10px] mt-2.5 uppercase tracking-[2px] font-black">Member since {joinDate}</Text> : null}
           </View>
 
           {/* ── Contact Info ── */}
-          <View style={styles.infoCard} testID="contact-info-card">
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: 'rgba(74,222,128,0.15)' }]}>
-                <Ionicons name="call-outline" size={16} color={COLORS.accent} />
+          <Card className="mx-5 p-0 overflow-hidden shadow-sm" testID="contact-info-card">
+            <View className="flex-row items-center p-4 border-b border-slate-100 dark:border-white/5">
+              <View className="w-10 h-10 rounded-2xl bg-green-500/10 items-center justify-center mr-4">
+                <Ionicons name="call-outline" size={16} color="#22c55e" />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.infoLabel}>Phone</Text>
-                <Text style={styles.infoValue}>+91 {household?.primary_phone}</Text>
+              <View className="flex-1">
+                <Text className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider mb-0.5">Phone</Text>
+                <Text className="text-slate-900 dark:text-white font-bold text-base">+91 {household?.primary_phone}</Text>
               </View>
             </View>
-            <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-              <View style={[styles.infoIcon, { backgroundColor: 'rgba(59,130,246,0.15)' }]}>
+            <View className="flex-row items-center p-4">
+              <View className="w-10 h-10 rounded-2xl bg-blue-500/10 items-center justify-center mr-4">
                 <Ionicons name="mail-outline" size={16} color="#3b82f6" />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.infoLabel}>Email</Text>
-                <Text style={styles.infoValue}>{household?.primary_email || '—'}</Text>
+              <View className="flex-1">
+                <Text className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider mb-0.5">Email</Text>
+                <Text className="text-slate-900 dark:text-white font-bold text-base">{household?.primary_email || '—'}</Text>
               </View>
-              <TouchableOpacity style={styles.editInlineBtn} onPress={openEditModal} testID="edit-email-btn">
-                <Text style={styles.editInlineText}>Edit</Text>
+              <TouchableOpacity onPress={openEditModal} testID="edit-email-btn" accessibilityRole="button" accessibilityLabel="Edit email">
+                <Text className="text-accent font-black text-sm px-2">Edit</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </Card>
 
           {/* ── Package Card ── */}
           {household?.package && (
-            <View style={styles.packageCard} testID="package-card">
-              <View style={styles.packageHeader}>
-                <View>
-                  <Text style={styles.packageLabel}>Current Plan</Text>
-                  <Text style={styles.packageName}>{household.package.name}</Text>
-                </View>
-                <View style={styles.priceBox}>
-                  <Text style={styles.packagePrice}>{formatCurrency(household.package.monthly_price)}</Text>
-                  <Text style={styles.perMonth}>/month</Text>
+            <Card 
+              className="mx-5 mt-6 shadow-sm" 
+              testID="package-card"
+              title="Current Plan"
+              titleClassName="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1"
+            >
+              <View className="flex-row justify-between items-start mb-4">
+                <Text className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex-1">{household.package.name}</Text>
+                <View className="bg-accent/10 px-3 py-2 rounded-2xl items-end">
+                  <Text className="text-accent font-black text-lg">{formatCurrency(household.package.monthly_price)}</Text>
+                  <Text className="text-accent/60 text-[10px] font-black uppercase">/month</Text>
                 </View>
               </View>
-              <Text style={styles.packageDesc}>{household.package.description}</Text>
-              <View style={styles.packageTags}>
+              <Text className="text-slate-500 dark:text-slate-400 text-sm leading-5 mb-4">{household.package.description}</Text>
+              <View className="flex-row flex-wrap gap-2">
                 {household.package.sports_included.map(s => (
-                  <View key={s} style={[styles.tag, { backgroundColor: (SPORT_COLORS[s] || COLORS.accent) + '22' }]}>
-                    <Text style={[styles.tagText, { color: SPORT_COLORS[s] || COLORS.accent }]}>{s}</Text>
+                  <View key={s} className="px-3 py-1.5 rounded-xl" style={{ backgroundColor: (SPORT_COLORS[s] || '#4ade80') + '22' }}>
+                    <Text className="text-xs font-bold" style={{ color: SPORT_COLORS[s] || '#4ade80' }}>{s}</Text>
                   </View>
                 ))}
-                {household.package.food_included && (
-                  <View style={[styles.tag, { backgroundColor: '#22c55e22' }]}>
-                    <Text style={[styles.tagText, { color: '#22c55e' }]}>🥬 Food</Text>
-                  </View>
-                )}
               </View>
-            </View>
-          )}
-
-          {/* ── Quick Links ── */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Access</Text>
-            <View style={styles.quickGrid}>
-              <TouchableOpacity style={styles.quickCard} onPress={() => router.push('/(user)/my-bookings')} testID="quick-my-bookings">
-                <Ionicons name="calendar-outline" size={22} color="#3b82f6" />
-                <Text style={styles.quickLabel}>My Bookings</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard} onPress={() => router.push('/(user)/food-history')} testID="quick-food-history">
-                <Ionicons name="time-outline" size={22} color="#22c55e" />
-                <Text style={styles.quickLabel}>Food History</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard} onPress={() => router.push('/(user)/members')} testID="quick-members">
-                <Ionicons name="people-outline" size={22} color="#a78bfa" />
-                <Text style={styles.quickLabel}>My Family</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard} onPress={() => router.push('/(user)/payments')} testID="quick-payments">
-                <Ionicons name="card-outline" size={22} color="#f59e0b" />
-                <Text style={styles.quickLabel}>Payments</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* ── My Family mini list ── */}
-          {members.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionRow}>
-                <Text style={styles.sectionTitle}>My Family</Text>
-                <TouchableOpacity onPress={() => router.push('/(user)/members')} testID="family-see-all">
-                  <Text style={styles.seeAll}>Manage →</Text>
-                </TouchableOpacity>
-              </View>
-              {members.map(m => (
-                <View key={m.id} style={styles.memberRow}>
-                  <View style={[styles.memberDot, { backgroundColor: (SPORT_COLORS[m.assigned_sport] || COLORS.primary) + '33' }]}>
-                    <Text style={styles.memberDotText}>{m.member_name[0]}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.memberName}>
-                      {m.member_name}
-                      {m.is_primary ? <Text style={styles.primaryTag}> · Primary</Text> : null}
-                    </Text>
-                    <Text style={styles.memberRel}>{m.relation}  ·  Age {m.age}  ·  {m.assigned_sport}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
+            </Card>
           )}
 
           {/* ── Settings ── */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Settings</Text>
-
-            {/* Edit Profile */}
-            <TouchableOpacity style={styles.settingRow} onPress={openEditModal} testID="setting-edit-profile">
-              <View style={[styles.settingIcon, { backgroundColor: 'rgba(74,222,128,0.12)' }]}>
-                <Ionicons name="person-outline" size={18} color={COLORS.accent} />
+          <View className="mt-8 px-5">
+            <Text className="text-slate-400 dark:text-slate-500 text-[11px] font-black uppercase tracking-[2px] ml-1 mb-4">Settings & Preferences</Text>
+            
+            {/* Theme Toggle */}
+            <View className="flex-row items-center py-4 border-b border-slate-50 dark:border-white/5">
+              <View className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 items-center justify-center mr-4">
+                <Ionicons name={colorScheme === 'dark' ? "moon-outline" : "sunny-outline"} size={18} color={isDark ? "#94a3b8" : "#64748b"} />
               </View>
-              <Text style={styles.settingLabel}>Edit Profile</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
-            </TouchableOpacity>
-
-            {/* Notification Toggle */}
-            <View style={styles.settingRow} testID="setting-notifications">
-              <View style={[styles.settingIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
-                <Ionicons name="notifications-outline" size={18} color="#3b82f6" />
+              <View className="flex-1">
+                <Text className="text-slate-900 dark:text-white font-bold text-base">Dark Mode</Text>
+                <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Switch between light and dark themes</Text>
               </View>
-              <Text style={styles.settingLabel}>Push Notifications</Text>
               <Switch
-                value={notifEnabled}
-                onValueChange={toggleNotifications}
-                trackColor={{ false: '#374151', true: COLORS.accent + '88' }}
-                thumbColor={notifEnabled ? COLORS.accent : '#6b7280'}
-                testID="notifications-toggle"
+                value={colorScheme === 'dark'}
+                onValueChange={toggleColorScheme}
+                trackColor={{ false: '#e2e8f0', true: '#4ade80' }}
+                thumbColor={Platform.OS === 'ios' ? '#fff' : (colorScheme === 'dark' ? '#fff' : '#f4f3f4')}
+                accessibilityLabel="Toggle Dark Mode"
               />
             </View>
 
-            {/* Contact Support */}
-            <TouchableOpacity style={styles.settingRow} onPress={contactSupport} testID="setting-support">
-              <View style={[styles.settingIcon, { backgroundColor: 'rgba(37,211,102,0.12)' }]}>
-                <Ionicons name="logo-whatsapp" size={18} color={COLORS.green} />
+            {/* Notifications */}
+            <View className="flex-row items-center py-4 border-b border-slate-50 dark:border-white/5">
+              <View className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 items-center justify-center mr-4">
+                <Ionicons name="notifications-outline" size={18} color={isDark ? "#94a3b8" : "#64748b"} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>Contact Support</Text>
-                <Text style={styles.settingSubLabel}>Chat with your community manager</Text>
+              <View className="flex-1">
+                <Text className="text-slate-900 dark:text-white font-bold text-base">Notifications</Text>
+                <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Alerts for bookings and delivery</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+              <Switch
+                value={notifEnabled}
+                onValueChange={toggleNotifications}
+                trackColor={{ false: '#e2e8f0', true: '#4ade80' }}
+                thumbColor={Platform.OS === 'ios' ? '#fff' : (notifEnabled ? '#fff' : '#f4f3f4')}
+                accessibilityLabel="Toggle Notifications"
+              />
+            </View>
+
+            {/* Support */}
+            <TouchableOpacity className="flex-row items-center py-4 border-b border-slate-50 dark:border-white/5" onPress={contactSupport} accessibilityRole="button" accessibilityLabel="Contact Support">
+              <View className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 items-center justify-center mr-4">
+                <Ionicons name="logo-whatsapp" size={18} color={isDark ? "#94a3b8" : "#64748b"} />
+              </View>
+              <Text className="flex-1 text-slate-900 dark:text-white font-bold text-base">Contact Support</Text>
+              <Ionicons name="chevron-forward" size={16} color={isDark ? "#64748b" : "#94a3b8"} />
             </TouchableOpacity>
 
-            {/* About WELLDHAN */}
-            <TouchableOpacity
-              style={styles.settingRow}
-              onPress={() => Alert.alert(
-                'About WELLDHAN',
-                'WELLDHAN v1.0.0\ncom.welldhan.app\n\nYour community\'s wellness + organic food platform.\n\nBuilt for Lansum Elegante, Gachibowli, Hyderabad.',
-                [{ text: 'OK' }]
-              )}
-              testID="setting-about"
-            >
-              <View style={[styles.settingIcon, { backgroundColor: 'rgba(167,139,250,0.12)' }]}>
-                <Ionicons name="information-circle-outline" size={18} color="#a78bfa" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>About WELLDHAN</Text>
-                <Text style={styles.settingSubLabel}>Version 1.0.0</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
-            </TouchableOpacity>
+            {/* Legal */}
+            <View className="mt-4">
+              <TouchableOpacity className="flex-row items-center py-4" onPress={() => router.push('/(legal)/terms')} accessibilityRole="link">
+                <View className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 items-center justify-center mr-4">
+                  <Ionicons name="document-text-outline" size={18} color={isDark ? "#94a3b8" : "#64748b"} />
+                </View>
+                <Text className="flex-1 text-slate-900 dark:text-white font-bold text-base">Terms & Conditions</Text>
+                <Ionicons name="chevron-forward" size={16} color={isDark ? "#64748b" : "#94a3b8"} />
+              </TouchableOpacity>
 
-            {/* Sign Out */}
-            <TouchableOpacity style={[styles.settingRow, styles.logoutRow]} onPress={handleLogout} testID="logout-btn">
-              <View style={[styles.settingIcon, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
-                <Ionicons name="log-out-outline" size={18} color={COLORS.error} />
-              </View>
-              <Text style={[styles.settingLabel, { color: COLORS.error }]}>Sign Out</Text>
-            </TouchableOpacity>
+              <TouchableOpacity className="flex-row items-center py-4" onPress={() => router.push('/(legal)/privacy')} accessibilityRole="link">
+                <View className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 items-center justify-center mr-4">
+                  <Ionicons name="shield-checkmark-outline" size={18} color={isDark ? "#94a3b8" : "#64748b"} />
+                </View>
+                <Text className="flex-1 text-slate-900 dark:text-white font-bold text-base">Privacy Policy</Text>
+                <Ionicons name="chevron-forward" size={16} color={isDark ? "#64748b" : "#94a3b8"} />
+              </TouchableOpacity>
+
+              <TouchableOpacity className="flex-row items-center py-4" onPress={() => router.push('/(legal)/refund')} accessibilityRole="link">
+                <View className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 items-center justify-center mr-4">
+                  <Ionicons name="refresh-outline" size={18} color={isDark ? "#94a3b8" : "#64748b"} />
+                </View>
+                <Text className="flex-1 text-slate-900 dark:text-white font-bold text-base">Refund & Cancellation</Text>
+                <Ionicons name="chevron-forward" size={16} color={isDark ? "#64748b" : "#94a3b8"} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Logout */}
+            <Button
+              label="Sign Out"
+              onPress={handleLogout}
+              variant="danger"
+              icon="log-out-outline"
+              className="mt-4"
+              size="lg"
+            />
+
+            <Text className="text-slate-400 dark:text-slate-600 text-center text-[10px] mt-10 font-black uppercase tracking-[3px]">Version 1.0.0</Text>
           </View>
-
-          <Text style={styles.version}>WELLDHAN · Lansum Elegante · Gachibowli</Text>
-          <View style={{ height: 32 }} />
         </ScrollView>
-      </SafeAreaView>
 
-      {/* ── Edit Profile Modal ── */}
-      <Modal visible={editVisible} animationType="slide" transparent onRequestClose={() => setEditVisible(false)}>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalSheet}>
-              <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Edit Profile</Text>
+      {/* Edit Modal */}
+      <Modal visible={editVisible} animationType="slide" transparent>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+          <View className="flex-1 bg-black/60 justify-end">
+            <View className="bg-white dark:bg-surface rounded-t-[40px] p-6 pb-10 border-t border-slate-100 dark:border-white/5 shadow-2xl">
+              <View className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700/50 self-center rounded-full mb-8" />
+              <Text className="text-2xl font-black text-slate-900 dark:text-white mb-2">Edit Profile</Text>
+              <Text className="text-slate-500 dark:text-slate-400 mb-8 font-medium">Update your account information below.</Text>
 
-              <Text style={styles.fieldLabel}>Full Name</Text>
-              <TextInput
-                style={[styles.fieldInput, editNameFocused && styles.fieldInputFocused]}
+              <Input
+                label="Full Name"
                 value={editName}
                 onChangeText={setEditName}
                 onFocus={() => setEditNameFocused(true)}
                 onBlur={() => setEditNameFocused(false)}
-                placeholder="Enter your full name"
-                placeholderTextColor={COLORS.textMuted}
-                autoCorrect={false}
-                testID="edit-name-input"
+                isFocused={editNameFocused}
+                placeholder="Enter your name"
+                accessibilityLabel="Full Name Input"
               />
 
-              <Text style={styles.fieldLabel}>Email Address</Text>
-              <TextInput
-                style={[styles.fieldInput, editEmailFocused && styles.fieldInputFocused]}
+              <Input
+                label="Email Address"
                 value={editEmail}
                 onChangeText={setEditEmail}
                 onFocus={() => setEditEmailFocused(true)}
                 onBlur={() => setEditEmailFocused(false)}
+                isFocused={editEmailFocused}
                 placeholder="Enter your email"
-                placeholderTextColor={COLORS.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
-                testID="edit-email-input"
+                accessibilityLabel="Email Input"
               />
-
-              <Text style={styles.phoneNote}>
-                📱 Phone: +91 {household?.primary_phone}
-                {'  '}(Contact manager to change)
+              
+              <Text className="text-slate-400 dark:text-slate-500 text-[11px] mt-3 bg-slate-50 dark:bg-white/5 p-4 rounded-xl leading-5 border border-slate-100 dark:border-white/5 mb-8">
+                <Ionicons name="information-circle-outline" size={14} /> Note: Phone number and Flat number cannot be changed manually. Please contact support if needed.
               </Text>
 
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={styles.modalCancelBtn}
+              <View className="flex-row gap-3">
+                <Button
+                  label="Cancel"
                   onPress={() => setEditVisible(false)}
-                  testID="edit-cancel-btn"
-                >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalSaveBtn, saving && { opacity: 0.6 }]}
+                  variant="secondary"
+                  className="flex-1"
+                />
+                <Button
+                  label="Save Changes"
                   onPress={handleSaveProfile}
-                  disabled={saving}
-                  testID="edit-save-btn"
-                >
-                  {saving
-                    ? <ActivityIndicator size="small" color={COLORS.primaryDark} />
-                    : <Text style={styles.modalSaveText}>Save Changes</Text>
-                  }
-                </TouchableOpacity>
+                  loading={saving}
+                  className="flex-[2]"
+                />
               </View>
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </ScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safe: { flex: 1 },
-
-  // Avatar
-  avatarSection: { alignItems: 'center', paddingTop: 24, paddingBottom: 16 },
-  avatarWrapper: { position: 'relative', marginBottom: 12 },
-  avatar: {
-    width: 90, height: 90, borderRadius: 45,
-    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: COLORS.accent,
-  },
-  avatarText: { fontSize: 32, fontWeight: '800', color: COLORS.accent },
-  editAvatarBtn: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: COLORS.background,
-  },
-  name: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 6 },
-  flatRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
-  flat: { fontSize: 14, color: COLORS.accent, fontWeight: '700' },
-  community: { fontSize: 13, color: COLORS.textSecondary },
-  joinDate: { fontSize: 12, color: COLORS.textMuted, marginTop: 4 },
-
-  // Info card
-  infoCard: {
-    marginHorizontal: 20, marginBottom: 16,
-    backgroundColor: COLORS.card, borderRadius: 16,
-    borderWidth: 1, borderColor: COLORS.cardBorder,
-    overflow: 'hidden',
-  },
-  infoRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  infoIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  infoLabel: { fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 },
-  infoValue: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
-  editInlineBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border },
-  editInlineText: { color: COLORS.accent, fontSize: 12, fontWeight: '700' },
-
-  // Package card
-  packageCard: {
-    marginHorizontal: 20, backgroundColor: COLORS.card, borderRadius: 16,
-    padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.cardBorder,
-    borderLeftWidth: 4, borderLeftColor: COLORS.accent,
-  },
-  packageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  packageLabel: { fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 3 },
-  packageName: { fontSize: 17, fontWeight: '800', color: COLORS.textPrimary },
-  priceBox: { alignItems: 'flex-end' },
-  packagePrice: { fontSize: 20, fontWeight: '800', color: COLORS.accent },
-  perMonth: { fontSize: 11, color: COLORS.textSecondary },
-  packageDesc: { fontSize: 13, color: COLORS.textSecondary, marginBottom: 10, lineHeight: 18 },
-  packageTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  tagText: { fontSize: 12, fontWeight: '600' },
-
-  // Quick links
-  section: { marginBottom: 20, paddingHorizontal: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 },
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  seeAll: { color: COLORS.accent, fontSize: 13, fontWeight: '600' },
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  quickCard: {
-    width: '47.5%', backgroundColor: COLORS.card, borderRadius: 14, padding: 14,
-    alignItems: 'center', gap: 8, borderWidth: 1, borderColor: COLORS.cardBorder,
-  },
-  quickLabel: { fontSize: 12, color: COLORS.textPrimary, fontWeight: '600', textAlign: 'center' },
-
-  // Members
-  memberRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  memberDot: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  memberDotText: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
-  memberName: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
-  primaryTag: { fontSize: 12, color: COLORS.accent, fontWeight: '500' },
-  memberRel: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-
-  // Settings
-  settingRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
-  logoutRow: { borderBottomWidth: 0, marginTop: 4, paddingVertical: 14 },
-  settingIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  settingLabel: { flex: 1, fontSize: 15, color: COLORS.textPrimary, fontWeight: '500' },
-  settingSubLabel: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
-  version: { textAlign: 'center', color: COLORS.textMuted, fontSize: 11, marginTop: 4, paddingBottom: 8 },
-
-  // Edit modal
-  modalOverlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: 'flex-end' },
-  modalSheet: {
-    backgroundColor: '#1a1a2e', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, gap: 14,
-  },
-  modalHandle: { width: 40, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
-  modalTitle: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary },
-  fieldLabel: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: -6 },
-  fieldInput: {
-    backgroundColor: COLORS.inputBg, borderRadius: 12,
-    borderWidth: 1, borderColor: COLORS.border,
-    paddingHorizontal: 14, paddingVertical: 14,
-    color: COLORS.textPrimary, fontSize: 15,
-  },
-  fieldInputFocused: { borderColor: COLORS.accent, backgroundColor: 'rgba(74,222,128,0.04)' },
-  phoneNote: { fontSize: 13, color: COLORS.textMuted, backgroundColor: COLORS.inputBg, padding: 12, borderRadius: 10, lineHeight: 20 },
-  modalActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
-  modalCancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
-    borderWidth: 1, borderColor: COLORS.border, alignItems: 'center',
-  },
-  modalCancelText: { color: COLORS.textSecondary, fontWeight: '600', fontSize: 15 },
-  modalSaveBtn: {
-    flex: 2, backgroundColor: COLORS.accent,
-    paddingVertical: 14, borderRadius: 12, alignItems: 'center',
-    shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35, shadowRadius: 10, elevation: 5,
-  },
-  modalSaveText: { color: COLORS.primaryDark, fontWeight: '800', fontSize: 15 },
-});
