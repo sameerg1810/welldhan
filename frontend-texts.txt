@@ -1,0 +1,1953 @@
+_layout.tsx
+,{" "}
+; } export default function RootLayout() { const { colorScheme } = useColorScheme(); const isDark = colorScheme === 'dark'; return (
+: ''}
+: null}
+..
+../../api/client
+../../components
+../../components/Button
+../../components/Card
+../../components/ScreenLayout
+../../src/api/bookings
+../../src/api/client
+../../src/api/dashboard
+../../src/api/food
+../../src/api/households
+../../src/api/payments
+../../src/api/slots
+../../src/api/trainers
+../../src/components
+../../src/constants/colors
+../../src/store/authStore
+../../src/types
+../../src/utils
+../../src/utils/navigation
+../../store/authStore
+../components
+../src/components
+../src/store/authStore
+../src/styles/global.css
+../types
+./App
+./app/**/*.{js,jsx,ts,tsx}
+./Button
+./Card
+./client
+./Input
+./pages/auth/login
+./pages/auth/otp
+./pages/auth/register
+./pages/index
+./pages/user/booking
+./pages/user/members
+./ScreenLayout
+./src/**/*.{js,jsx,ts,tsx}
+./store/authStore
+./styles.css
+./theme
+.expo
+.gitignore
+.metro-cache
+· · · · · ·
+· {p.month_year}
+( path: string, options: RequestInit = {} ): Promise
+('emailPassword'); const [phone, setPhone] = useState(''); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [loading, setLoading] = useState(false); const [focusedField, setFocusedField] = useState
+("User"); const [loading, setLoading] = useState(false); const [focusedField, setFocusedField] = useState
+(); const { setAuth } = useAuthStore(); const [otp, setOtp] = useState(""); const [loading, setLoading] = useState(false); const [resending, setResending] = useState(false); const [countdown, setCountdown] = useState(60); const inputRef = useRef
+([]); const [bookings, setBookings] = useState
+([]); const [currentPayment, setCurrentPayment] = useState
+([]); const [error, setError] = useState
+([]); const [name, setName] = useState(""); const [error, setError] = useState
+({ error: 'request_failed', error_description: `HTTP ${response.status}`, })); throw new Error(error.error_description || error.detail || `HTTP ${response.status}`); } return response.json(); } export const api = { get:
+(admin)
+(legal)
+(manager)
+(null); const [selectedMemberId, setSelectedMemberId] = useState
+(null); const [user, setUser] = useState
+(path, { method: 'PATCH', body: JSON.stringify(body) }), put:
+(path, { method: 'POST', body: JSON.stringify(body) }), patch:
+(path, { method: 'PUT', body: JSON.stringify(body) }), delete:
+(path), post:
+(trainer)
+(undefined); export function AuthProvider({ children }: { children: React.ReactNode }) { const [token, setToken] = useState
+(user)
+) : (
+) : current ? (
+) : null}
+) : role === "Trainer" ? (
+); } `; const layoutContent = `import { Stack } from "expo-router"; export default function RootLayout() { return
+); } if (error) { return (
+); } if (isLoading) { return (
+); } return (
+); }; return (
+); })}
+); }} ListEmptyComponent={
+); if (onPress) { return (
+); if (useSafeArea) { return (
+); return (
+))}
+)}
+)} {/* ── Settings ── */}
+)} {/* Add Member Modal */}
+)} {/* Admin Actions */}
+)} {/* Booking Modal */}
+)} {/* Bottom Summary */}
+)} {/* Food Delivery */} {household?.food_plan_active && (
+)} {/* Quick Actions */}
+)} {/* Quick Info */}
+)} {bookings.length === 0 ? (
+)} {children}
+)} {inv.is_organic &&
+)} {p.payment_method && (
+)} {renderInput("Password", password, setPassword, "password", { placeholder: "Password", secureTextEntry: true, })} {renderInput( "Confirm Password", confirmPassword, setConfirmPassword, "confirmPassword", { placeholder: "Confirm password", secureTextEntry: true }, )}
+)} {subtitle &&
+)} {subtitle && (
+)} ListEmptyComponent={
+{ // Navigate to password change screen // router.push('/(admin)/change-password'); }, }, ], ); }; if (!role || role !== "Admin") { return (
+{ Alert.alert('Sign Out', 'Are you sure?', [ { text: 'Cancel', style: 'cancel' }, { text: 'Sign Out', style: 'destructive', onPress: logout }, ]); }; const stars = Math.floor(trainer?.rating || 0); return (
+{ Alert.alert('Sign Out', 'Are you sure?', [ { text: 'Cancel', style: 'cancel' }, { text: 'Sign Out', style: 'destructive', onPress: logout }, ]); }; const stats = summary ? [ { icon: 'business-outline', label: 'Communities', value: summary.communities, color: '#4ade80' }, { icon: 'home-outline', label: 'Total Families', value: summary.total_families, color: '#22c55e' }, { icon: 'fitness-outline', label: 'Active Trainers', value: summary.active_trainers, color: '#3b82f6' }, { icon: 'calendar-outline', label: 'Total Bookings', value: summary.total_bookings, color: '#a78bfa' }, { icon: 'checkmark-circle-outline', label: 'Sessions Attended', value: summary.attended_sessions, color: '#22c55e' }, { icon: 'cash-outline', label: 'Total Revenue', value: formatCurrency(summary.total_revenue), color: '#f59e0b' }, { icon: 'warning-outline', label: 'Pending Revenue', value: formatCurrency(summary.pending_revenue), color: '#ef4444' }, ] : []; return (
+{ const [loading, setLoading] = useState(true); const [bookings, setBookings] = useState
+{ const [loading, setLoading] = useState(true); const [members, setMembers] = useState
+{ const cleaned = phone.trim().replace(/\s/g, ''); if (cleaned.length
+{ const colorScheme = useColorScheme(); const isDark = colorScheme === "dark"; return (
+{ const Content = (
+{ const isLow = inv.stock_quantity
+{ const item = pref.food_item; if (!item) return null; return (
+{ const mapped: Partial
+{ const msg = encodeURIComponent(`Hi, my WELLDHAN ${monthYear} subscription of ₹${amount} is due. Paying to UPI: welldhan@okicici`); Linking.openURL(`https://wa.me/?text=${msg}`); }; return (
+{ const sc = STATUS_COLORS[b.status] || '#94a3b8'; return (
+{ const sc = STATUS_COLORS[o.delivery_status] || '#94a3b8'; return (
+{ const spots = slot.spots_left ?? (slot.max_capacity - slot.current_booked); const spotsColor = getSpotsColor(spots); return (
+{ const statusColor = STATUS_COLORS[b.status] || '#94a3b8'; return (
+{ if ( error.message.includes("unauthorized") || error.message.includes("forbidden") ) { return false; } return count
+{ if (!email.trim() || !password) { Alert.alert('Missing Details', 'Please enter email and password'); return; } setLoading(true); try { const res = await fetch(`${BASE_URL}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim(), password }), }); const data = await res.json(); if (!res.ok) throw new Error(data.detail || 'Login failed'); if (data.requires_2fa && data.challenge_id) { router.push({ pathname: '/auth/otp', params: { challengeId: data.challenge_id, maskedPhone: data.masked_phone || '', devOtp: data.otp_dev || '', }, }); return; } if (data.token && data.role) { Alert.alert('Logged In', 'Login successful'); } else { throw new Error('Unexpected login response'); } } catch (err: any) { Alert.alert('Error', err.message || 'Something went wrong'); } finally { setLoading(false); } }; return (
+{ if (!household?.community?.manager_phone) return; const msg = encodeURIComponent(`Hi WELLDHAN Team, I need help with my account`); Linking.openURL(`https://wa.me/91${household.community.manager_phone}?text=${msg}`); }; if (loading) return (
+{ if (!household?.join_date) return null; return formatDate(household.join_date, 'MMMM YYYY'); }, [household?.join_date]); return (
+{ if (!isHydrated) return; const inAuth = segments[0] === 'auth'; const inLegal = ['terms', 'privacy', 'refund'].includes(segments[0]); const inSplash = segments.length === 0 || segments[0] === 'index'; if (!token && !inAuth && !inSplash && !inLegal) { router.replace('/auth/login'); } else if (token && role && (inAuth || inSplash)) { if (role === 'User') router.replace('/(user)/home'); else if (role === 'Trainer') router.replace('/(trainer)/home'); else if (role === 'Manager') router.replace('/(manager)/dashboard'); else if (role === 'Admin') router.replace('/(admin)/dashboard'); } }, [token, role, isHydrated, segments]); return
+{ if (!name.trim()) return setError("Enter a name"); try { await api.households.members.create({ name }); setName(""); await load(); } catch (e: any) { setError(e?.message || "Add failed"); } }; return (
+{ if (countdown
+{ let token = await getToken(); const headers: Record
+{ return (
+{ setError(null); const challenge_id = localStorage.getItem("challenge_id"); if (!challenge_id) return setError("Missing challenge id"); try { const resp = await api.auth.verifyOtp({ challenge_id, otp }); if (resp && resp.token) { setAuth(resp.token, resp.role, resp.user_data); localStorage.removeItem("challenge_id"); navigate("/"); } } catch (err: any) { setError(err?.response?.data?.message || err.message); } }; return (
+{ setError(null); if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError("Please enter a valid email address."); return; } if (!password) { setError("Please enter your password."); return; } setLoading(true); try { const resp = await api.auth.login({ email, password }); if (resp && resp.requires_2fa && resp.challenge_id) { // store challenge and navigate to otp localStorage.setItem("challenge_id", resp.challenge_id); navigate("/auth/otp"); setLoading(false); return; } // if token present if (resp && resp.token) { setAuth(resp.token, resp.role, resp.user_data); navigate("/"); setLoading(false); } } catch (err: any) { setError(err?.response?.data?.message || err.message); setLoading(false); } }; return (
+{ setError(null); if (!full_name) { setError("Please enter your full name."); return; } if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError("Please enter a valid email address."); return; } if (!password || password.length
+{ setResending(true); try { const isSms2fa = Boolean(params.challengeId); const res = await fetch( isSms2fa ? `${BASE_URL}/api/2fa/sms/send-otp` : `${BASE_URL}/api/auth/send-otp`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify( isSms2fa ? { challenge_id: params.challengeId } : { phone: params.phone }, ), }, ); const data = await res.json(); if (!res.ok) throw new Error(data.detail || "Failed"); setCountdown(60); setOtp(""); if (data.otp_dev) setOtp(data.otp_dev); const where = isSms2fa ? params.maskedPhone || "your phone" : params.maskedEmail || "your email"; Alert.alert("OTP Sent", `New OTP sent to ${where}`); } catch (err: any) { Alert.alert("Error", err.message); } finally { setResending(false); } }; const subtitleValue = params.challengeId ? params.maskedPhone || "your phone" : params.maskedEmail || "your email"; return (
+{ setToken(t); setRole(r || null); setUser(u || null); }; return (
+{ switch (variant) { case "default": return styles.default; case "elevated": return styles.elevated; case "flat": return styles.flat; case "accented": return styles.accented; default: return styles.default; } })(); const content = (
+{ switch (variantType) { case "primary": return { variant: "contained", color: "primary" as const }; case "secondary": return { variant: "contained", color: "secondary" as const }; case "outline": return { variant: "outlined", color: "primary" as const }; case "text": return { variant: "text", color: "primary" as const }; default: return { variant: "contained", color: "primary" as const }; } })(); // Spread rest first so mapped values (from variantType) take precedence. return ( // Cast ref to any to satisfy MUI's polymorphic overloads (button vs anchor).
+{ try { // API client automatically includes Bearer token via OAuth const response = await api.get
+{ try { await api.bookings.cancel(id); await load(); } catch (e: any) { setError(e?.message || "Cancel failed"); } }; return (
+{ try { const auth = await AsyncStorage.getItem('welldhan_auth_oauth'); if (auth) { const parsed = JSON.parse(auth); return parsed.refreshToken || null; } } catch {} return null; } async function refreshAccessToken(): Promise
+{ try { const auth = await AsyncStorage.getItem('welldhan_auth_oauth'); if (auth) { const parsed = JSON.parse(auth); return parsed.token; } } catch {} return null; } async function getRefreshToken(): Promise
+{ try { const refreshToken = await getRefreshToken(); if (!refreshToken) return null; const response = await fetch(`${BASE_URL}/api/auth/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: refreshToken }), }); if (response.ok) { const data = await response.json(); // Update token in storage const auth = await AsyncStorage.getItem('welldhan_auth_oauth'); if (auth) { const parsed = JSON.parse(auth); parsed.token = data.access_token; parsed.tokenExpiresAt = Date.now() + data.expires_in * 1000; await AsyncStorage.setItem('welldhan_auth_oauth', JSON.stringify(parsed)); } return data.access_token; } } catch (error) { console.error('Token refresh failed:', error); } return null; } async function request
+{!current.is_paid && (
+{!m.is_primary && (
+{'⭐'.repeat(stars)}
+{" "} and{" "}
+{(b.member?.member_name || 'M')[0]}
+{(p.household?.primary_name || 'X')[0]}
+{(title || subtitle || headerContent) && (
+{(title || subtitle) && (
+{/* ── Avatar + Info ── */}
+{/* ── Contact Info ── */}
+{/* ── Package Card ── */} {household?.package && (
+{/* Admin Dashboard Header */}
+{/* App Name */}
+{/* Background Animated Element */}
+{/* Buttons Area */}
+{/* Category Filters */}
+{/* Community tag */}
+{/* Current Payment Status */}
+{/* Dashboard Summary Cards */} {summary && (
+{/* Edit Member Modal */}
+{/* Edit Modal */}
+{/* Filter Tabs */}
+{/* Filters */}
+{/* Form */}
+{/* Header */}
+{/* Header Title Override */}
+{/* Info Section */}
+{/* Legal */}
+{/* Logo with Glow */}
+{/* Logout */}
+{/* Mode toggle */}
+{/* Notifications */}
+{/* Open Graph / Facebook */}
+{/* Pause Modal */}
+{/* Payment History */}
+{/* PWA / Mobile */}
+{/* Recent bookings */} {recent?.length ? (
+{/* Search */}
+{/* Security Information */}
+{/* SEO */}
+{/* Snapshot */}
+{/* Sport Filters */}
+{/* Stats */} {isLoading ? (
+{/* Summary Stats */}
+{/* Support */}
+{/* Test Credentials */}
+{/* Theme Toggle */}
+{/* Today's Session */}
+{/* Today's Summary */}
+{/* Token Status Badge */}
+{/* Trainer Card */}
+{/* Twitter */}
+{/* UPI ID */}
+{/* Web: wrap fields in a form so password fields are in a form for chromium */} {Platform.OS === "web" ? (
+{actions &&
+{actions}
+{attended}
+{b.member?.member_name || 'Member'}
+{b.member?.member_name || 'Unknown'}
+{b.slot?.slot_time} · {b.slot?.sport}
+{b.slot?.sport || 'Sport'}
+{b.slot?.sport}
+{b.status === 'Confirmed' ? (
+{b.status === 'Confirmed' && (
+{b.status}
+{c.phone}
+{c.role}:
+{cat}
+{children}
+{community?.name}
+{content}
+{Content}
+{current.is_paid ? '✓ Paid' : '⚠ Payment Due'}
+{current.month_year}
+{currentPayment?.is_paid ? 'Paid' : 'Due'} · {foodPrefsCount} food items
+{edit?.name}
+{editModal && (
+{error &&
+{error && (
+{error instanceof Error ? error.message : "Failed to load dashboard"}
+{error}
+{f}
+{formatCurrency(current.amount_due)}
+{formatCurrency(household.package.monthly_price)}
+{formatCurrency(inv.price_per_unit)}/{inv.unit}
+{formatCurrency(p.amount_due)}
+{formatCurrency(summary.total_revenue || 0)}
+{formatCurrency(total)}
+{formatDate(date)}
+{getDaysText(s.slot_days)}
+{getGreeting()},
+{getInitials(household?.primary_name || 'WD')}
+{getSportIcon(b.slot?.sport || '')}
+{getSportIcon(m.assigned_sport)} {m.assigned_sport}
+{getSportIcon(s.assigned_sport)} {s.assigned_sport}
+{getSportIcon(s.sport)}
+{getSportIcon(s)} {s}
+{getSportIcon(selected.sport)} {selected.sport}
+{getSportIcon(slot.sport)}
+{getSportIcon(trainer?.sport || '')} {trainer?.sport}
+{getSportIcon(trainer?.sport || '')} {trainer?.sport} Trainer
+{getSportIcon(upcoming.slot?.sport || '')}
+{headerContent && (
+{headerContent}
+{hh.package?.name} · {hh.plan_type} · {hh.total_members} members
+{hh.primary_name[0]}
+{hh.primary_name}
+{hh.primary_phone}
+{household?.primary_email || '—'}
+{household?.primary_name?.split(' ')[0]} 👋
+{household?.primary_name}
+{household.package.description}
+{household.package.name}
+{icon && (
+{inv.category} · {inv.unit}
+{inv.name}
+{inv.stock_quantity} {inv.unit}
+{inv.supplier_name}
+{isLoading ? (
+{isLow && (
+{item.category} · {pref.default_quantity} {pref.unit}
+{item.is_organic &&
+{item.label}
+{item.name}
+{item.value}
+{joinDate ?
+{label &&
+{label}
+{loading ? "Creating account..." : "Create account"}
+{loading ? "Signing in..." : "Continue"}
+{loading ? (
+{lowStockCount} Low
+{m.is_primary &&
+{m.member_name.split(' ')[0]}
+{m.member_name[0]}
+{m.member_name}
+{m.relation}
+{m.relation} · Age {m.age}
+{mode === 'emailPassword' ? (
+{noShow}
+{o.delivery_status}
+{o.food_item?.name || 'Item'}
+{o.quantity} {o.food_item?.unit} · {o.delivery_time}
+{p.household?.primary_name}
+{p.is_overdue && (
+{p.is_paid ? 'Paid' : p.is_overdue ? 'Overdue' : 'Pending'}
+{p.month_year}
+{p.payment_date && (
+{p.payment_method}
+{params.devOtp ? (
+{paymentSummary ? (
+{pending}
+{prefix && (
+{prefix}
+{r}
+{renderInput( "Full Name", fullName, setFullName, "fullName", { placeholder: "Your name" }, )} {renderInput("Email", email, setEmail, "email", { placeholder: "you@example.com", autoCapitalize: "none", keyboardType: "email-address", })} {renderInput("Phone", phone, setPhone, "phone", { placeholder: "10-digit phone", keyboardType: "phone-pad", })} {renderInput( "Flat Number", flatNumber, setFlatNumber, "flatNumber", { placeholder: "A-101" }, )}
+{renderInput( "Manager Name", managerName, setManagerName, "managerName", { placeholder: "Manager name" }, )} {renderInput( "Manager Email", managerEmail, setManagerEmail, "managerEmail", { placeholder: "manager@example.com", autoCapitalize: "none", keyboardType: "email-address", }, )} {renderInput( "Manager Phone", managerPhone, setManagerPhone, "managerPhone", { placeholder: "10-digit phone", keyboardType: "phone-pad", }, )} {renderInput( "Community ID", managerCommunityId, setManagerCommunityId, "managerCommunityId", { placeholder: "community uuid" }, )}
+{renderInput( "Name", trainerName, setTrainerName, "trainerName", { placeholder: "Trainer name" }, )} {renderInput("Email", email, setEmail, "email", { placeholder: "trainer@example.com", autoCapitalize: "none", keyboardType: "email-address", })} {renderInput("Phone", phone, setPhone, "phone", { placeholder: "10-digit phone", keyboardType: "phone-pad", })} {renderInput("Sport", sport, setSport, "sport", { placeholder: "Badminton", })} {renderInput( "Community ID", communityId, setCommunityId, "communityId", { placeholder: "community uuid" }, )}
+{renderInput("Full Name", fullName, setFullName, "fullName", { placeholder: "Your name", })} {renderInput("Email", email, setEmail, "email", { placeholder: "you@example.com", autoCapitalize: "none", keyboardType: "email-address", })} {renderInput("Phone", phone, setPhone, "phone", { placeholder: "10-digit phone", keyboardType: "phone-pad", })} {renderInput( "Flat Number", flatNumber, setFlatNumber, "flatNumber", { placeholder: "A-101" }, )}
+{resending ? (
+{role === "User" ? (
+{s !== 'All' ? `${getSportIcon(s)} ` : ''}{s}
+{s.current_booked}/{s.max_capacity}
+{s.label}
+{s.member_name[0]}
+{s.member_name}
+{s.relation} · Age {s.age} · Flat {s.household?.flat_number}
+{s.sport}
+{s.value}
+{s}
+{selected && (
+{selectedCount} items selected
+{selectedMemberId === m.id &&
+{showPassword ? "Hide password" : "Show password"}
+{slot.sport}
+{slot.trainer?.image_url ? (
+{slot.trainer?.name}
+{slots.length}
+{spots === 0 ? 'Full' : `${spots} left`}
+{subtitle}
+{subtitleValue}
+{summary.active_bookings || 0}
+{summary.total_members || 0}
+{title &&
+{title && (
+{title || "Welldhan"}
+{title}
+{todayBookings.length}
+{tokenExpiresAt && (
+{trainer?.image_url ? (
+{trainer?.name?.[0] || 'T'}
+{trainer?.name}
+{trainer?.name} 💪
+{trainer?.rating} / 5.0
+{upcoming ? (
+{upcoming.slot?.sport}
+{upcoming.trainer?.image_url ? (
+@expo/vector-icons
+@mui/material
+@mui/material/AppBar
+@mui/material/Box
+@mui/material/Button
+@mui/material/Card
+@mui/material/CardActions
+@mui/material/CardContent
+@mui/material/CardHeader
+@mui/material/Container
+@mui/material/CssBaseline
+@mui/material/styles
+@mui/material/TextField
+@mui/material/Toolbar
+@mui/material/Typography
+@react-native-async-storage/async-storage
+@react-native-community/datetimepicker
+@tanstack/react-query
+@vitejs/plugin-react
+/_sitemap
+/_sitemap${
+/(admin)/change-password
+/(admin)/dashboard
+/(legal)/privacy
+/(legal)/refund
+/(legal)/terms
+/(manager)/dashboard
+/(trainer)/home
+/(user)/booking
+/(user)/food
+/(user)/food-history
+/(user)/home
+/(user)/members
+/(user)/my-bookings
+/${
+/admin/summary
+/api/auth/signup
+/api/auth/signup/manager
+/api/auth/signup/trainer
+/attendance
+/attendance${
+/auth/login
+/auth/login${
+/auth/logout
+/auth/otp
+/auth/otp${
+/auth/register
+/auth/register${
+/booking
+/booking${
+/bookings
+/bookings/${id}/cancel
+/bookings/attendance
+/bookings/mine
+/bookings/mine/upcoming
+/bookings/trainer
+/dashboard
+/dashboard.example
+/dashboard.example${
+/dashboard/payment-summary
+/dashboard/recent-bookings
+/dashboard/stats
+/dashboard${
+/food
+/food-history
+/food-history${
+/food/inventory
+/food/inventory/${id}/stock
+/food/inventory/low-stock
+/food/orders/mine
+/food/orders/today
+/food/preferences
+/food/preferences/${id}
+/food/preferences/pause
+/food/preferences/toggle
+/food${
+/home
+/home${
+/households/me
+/households/me/members
+/households/me/members/${id}
+/images/favicon.png
+/inventory
+/inventory${
+/manager/households${search ?
+/members
+/members${
+/month
+/my-bookings
+/my-bookings${
+/payments
+/payments/mark-paid
+/payments/mine
+/payments/mine/current
+/payments/pending
+/payments${
+/privacy
+/privacy${
+/profile
+/profile${
+/refund
+/refund${
+/residents
+/residents${
+/slots
+/slots/by-sport/${sport}
+/slots/trainer
+/src/main.tsx
+/students
+/students${
+/terms
+/terms${
+/trainers
+/trainers/by-sport/${sport}
+/trainers/me
+/trainers/me/students
+/trainers/rate
+/user/booking
+/user/booking/create
+/user/members
+/v1/2fa/sms/send-otp
+/v1/2fa/sms/verify-otp
+/v1/auth/login
+/v1/auth/signup
+/v1/auth/signup/manager
+/v1/auth/signup/trainer
+/v1/bookings
+/v1/bookings/${booking_id}/cancel
+/v1/bookings/all
+/v1/bookings/attendance
+/v1/bookings/mine
+/v1/bookings/mine/past
+/v1/bookings/mine/upcoming
+/v1/bookings/trainer
+/v1/households/me
+/v1/households/me/members
+/v1/households/me/members/${member_id}
+/v1/notifications
+/v1/packages
+/v1/payments
+/v1/slots
+/v1/slots/availability
+/v1/trainers
+\n
+\n\n
+\n✅ Project reset complete. Next steps:
+\n📁 New /app directory created.
+\n3. Delete the /${exampleDir} directory when you're done referencing it.
+& { variantType?: VariantType; }; const Button = React.forwardRef
+#000
+#059669
+#064e3b
+#071013
+#097939
+#0d1b13
+#0f1117
+#0f172a
+#0f766e
+#10b981
+#12141d
+#143d23
+#16241c
+#16a34a
+#1976d2
+#1a1a2e
+#1a4d2e
+#22c55e
+#22c55e22
+#232338
+#25D366
+#2d7a47
+#34d399
+#38bdf8
+#3b82f6
+#475569
+#4ade80
+#64748b
+#6b7280
+#94a3b8
+#9c27b0
+#9ca3af
+#a78bfa
+#a855f7
+#e2e8f0
+#eab308
+#ef4444
+#ef444422
+#f4f3f4
+#f59e0b
+#f7f7fb
+#f8fafc
+#f97316
+#fff
+#ffffff
+• 15-min access token expiry
+• 2FA enabled for login
+• Cancellations made 12 hours before the session start time are eligible for a full refund or credit.{"\n\n"}• Cancellations made within 12 hours of the session are non-refundable.{"\n\n"}• In case of session cancellation by WELLDHAN or the trainer, a full refund or session credit will be provided.
+• In case of a payment failure where the amount is debited but the booking is not confirmed, the amount will be automatically refunded by the payment gateway (Razorpay/PayU) within 5-7 business days.
+• OAuth 2.0 Bearer Token
+• Orders can be cancelled before the 7:00 PM cutoff on the day before delivery.{"\n\n"}• Once the delivery window starts (after cutoff), orders cannot be cancelled or refunded.{"\n\n"}• If a product is delivered damaged or spoiled, please report it within 2 hours of delivery for a replacement or refund.
+• Role-based access control
+• Subscriptions can be cancelled at any time; however, no refunds are provided for the remaining days of the current billing cycle.{"\n\n"}• Access to services will continue until the end of the paid period.
+• Users must be residents of the designated community (e.g., Lansum Elegante).{"\n\n"}• Bookings for sports sessions are subject to availability and community-specific rules.{"\n\n"}• Organic food delivery is subject to inventory and scheduled delivery windows.
+← Back
++ organic food
++91 {household?.primary_phone}
+= { 'Content-Type': 'application/json', ...(options.headers as Record
+= { Badminton: '#4ade80', Karate: '#f59e0b', Yoga: '#a78bfa', Swimming: '#38bdf8', }; export const STATUS_COLORS: Record
+= { Badminton: '🏸', Yoga: '🧘', Karate: '🥋', Swimming: '🏊', }; return icons[sport] || '🏃'; } export function getSpotsColor(spots: number): string { if (spots === 0) return '#ef4444'; if (spots
+= monthAgo; return true; }); // Group by delivery date const grouped = filtered.reduce((acc: Record
+| ''}
+⏰ {s.slot_time}
+⏰ {selected.slot_time} · {getDaysText(selected.slot_days)}
+⏰ {slot.slot_time} · {getDaysText(slot.slot_days)}
+⏰ {upcoming.slot?.slot_time}
+⏱ OTP expires in 10 minutes
+⚠ Payment Due
+🇮🇳 +91
+✅ Booked!
+✅ Paused
+✅ Saved
+✅ Updated
+✓ Paid
+❌ /${dir} deleted.
+❌ Error during script execution: ${error.message}
+❌ Invalid input. Please enter 'Y' or 'N'.
+➡️ /${dir} does not exist, skipping.
+➡️ /${dir} moved to /${exampleDir}/${dir}.
+⭐ {trainer?.rating}
+🌿
+🌿 Organic
+🏃
+🏊
+🏋️ {b.trainer?.name}
+🏢 {household?.community?.name}
+🏢 Lansum Elegante · Gachibowli
+🏢 Lansum Elegante, Gachibowli
+🏸
+👤 {b.member?.member_name}
+👤 {selected.trainer?.name}
+💡 OTP will be sent to your registered email address (legacy)
+💡 You’ll receive an OTP on your registered phone (SMS 2FA)
+💪
+📁 /${exampleDir} directory created.
+📄 app/_layout.tsx created.
+📄 app/index.tsx created.
+📅
+📅 {formatDate(b.session_date)} · {b.slot?.slot_time}
+📋 Community Info
+📌
+📍 {community?.location}
+📍 {s.location}
+📍 {selected.location}
+📍 {slot.location}
+📍 {upcoming.slot?.location}
+🔐 OAuth 2.0 Authentication Active
+🔑 Test Credentials
+🔒 Security
+🔔 Notifications On
+🔕 Notifications Off
+🕒 Recent Bookings
+🥋
+🥬
+🧘
+🚚 Delivering tomorrow at 7:00 AM
+🛠 Dev Mode — OTP: {params.devOtp}
+${'/(admin)'}/dashboard
+${'/(admin)'}/dashboard.example
+${'/(admin)'}/dashboard.example${
+${'/(admin)'}/dashboard${
+${'/(legal)'}/privacy
+${'/(legal)'}/privacy${
+${'/(legal)'}/refund
+${'/(legal)'}/refund${
+${'/(legal)'}/terms
+${'/(legal)'}/terms${
+${'/(manager)'}/dashboard
+${'/(manager)'}/dashboard${
+${'/(manager)'}/inventory
+${'/(manager)'}/inventory${
+${'/(manager)'}/payments
+${'/(manager)'}/payments${
+${'/(manager)'}/residents
+${'/(manager)'}/residents${
+${'/(trainer)'}/attendance
+${'/(trainer)'}/attendance${
+${'/(trainer)'}/home
+${'/(trainer)'}/home${
+${'/(trainer)'}/profile
+${'/(trainer)'}/profile${
+${'/(trainer)'}/students
+${'/(trainer)'}/students${
+${'/(user)'}/booking
+${'/(user)'}/booking${
+${'/(user)'}/food
+${'/(user)'}/food-history
+${'/(user)'}/food-history${
+${'/(user)'}/food${
+${'/(user)'}/home
+${'/(user)'}/home${
+${'/(user)'}/members
+${'/(user)'}/members${
+${'/(user)'}/my-bookings
+${'/(user)'}/my-bookings${
+${'/(user)'}/payments
+${'/(user)'}/payments${
+${'/(user)'}/profile
+${'/(user)'}/profile${
+${BASE_URL}/api/2fa/sms/send-otp
+${BASE_URL}/api/2fa/sms/verify-otp
+${BASE_URL}/api/auth/login
+${BASE_URL}/api/auth/refresh
+${BASE_URL}/api/auth/send-otp
+${BASE_URL}/api/auth/verify-otp
+${BASE_URL}/api/seed
+${BASE_URL}/api${path}
+${BASE_URL}${path}
+${getSportIcon(s)}
+${households.length} households
+${pending.length} households with pending payments
+${slot.sport} session by ${slot.trainer?.name} at ${slot.slot_time}. ${spots} spots left.
+${spots} left
+${students.length} students enrolled
+${trainer?.experience_years} years
+₹{item.price_per_unit}/{item.unit}
+₹${amount.toLocaleString('en-IN')}
+0 ? (
+0 && (
+1. Acceptance of Terms
+1. Data Collection
+1. Run \`npx expo start\
+1. Sports Bookings
+10-digit number
+10-digit phone
+100%
+100vh
+1024px
+1280px
+1rem
+2-digit
+2. Organic Food Delivery
+2. Service Usage
+2. Use of Information
+22
+2rem
+3. Monthly Subscriptions
+3. Payment Terms
+3. Third-Party Services
+33
+4. Data Security
+4. Payment Failures
+4. WhatsApp Communication
+45deg
+480px
+5. Contact Support
+5. User Conduct
+5. Your Rights
+6. Liability
+6. Updates
+600
+700
+768px
+800
+9000000001
+9000000002
+9100000001
+9876543210
+A-101
+Absent
+absolute bg-accent opacity-15
+absolute bottom-0 right-0 bg-accent w-8 h-8 rounded-full items-center justify-center border-2 border-white dark:border-primary-dark shadow-sm
+absolute bottom-8 left-0 right-0 items-center
+absolute w-[140px] h-[140px] rounded-full bg-accent opacity-20
+accented
+Access Denied
+Account created. Please login to continue.
+Active Bookings
+Active Trainers
+add
+Add
+Add failed
+Add Family Member
+Add Member
+Add test/sample data
+add-member-btn
+Admin
+Admin access required
+Admin Access Required
+Admin Actions
+Admin Dashboard
+admin-logout-btn
+admin-stat-${s.label}
+admin-stats
+admin-summary
+Age
+Age {m.age}
+Alerts for bookings and delivery
+All
+All deliveries paused until selected date
+All payments up to date!
+Already have an account?{" "}
+api.get
+app
+App
+app-example
+apple-mobile-web-app-status-bar-style
+application/json
+Are you sure you want to cancel this booking?
+Are you sure you want to logout?
+Are you sure you want to sign out of WELLDHAN?
+Are you sure?
+Arial
+arrow-back
+arrow-forward
+assets
+Assets copy complete.
+Assigned Sport
+attendance
+Attendance
+attendance-card-${b.id}
+Attended
+attended-stat
+auth
+auth/login
+auth/otp
+auth/register
+Authorization
+Authorization Error
+axios
+b.id} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }} ListEmptyComponent={
+b.status === 'Confirmed').length; return (
+babel-preset-expo
+Back
+back-btn
+background.default
+Badminton
+bar-chart
+Bearer
+Bearer ${newToken}
+Bearer ${token}
+bg-accent/10 px-2 py-0.5 rounded-lg
+bg-accent/10 px-2 py-0.5 rounded-lg border border-accent/20
+bg-accent/10 px-3 py-1 rounded-lg self-start mt-2 border border-accent/20
+bg-accent/10 px-3 py-1.5 rounded-full border border-accent/30 flex-row items-center gap-2
+bg-accent/10 px-3 py-2 rounded-2xl items-end
+bg-green-600 shadow-green-600/30
+bg-purple-50 p-4 rounded-lg border border-purple-200 flex-row items-center justify-between
+bg-red-50 p-4 rounded-lg border border-red-200 flex-row items-center justify-between
+bg-red-500/10 border border-red-500/20
+bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20
+bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20 self-start mt-2
+bg-red-500/10 px-3 py-1.5 rounded-xl border border-red-500/20
+bg-slate-100 dark:bg-primary-dark px-2 py-1 rounded-lg
+bg-slate-50 dark:bg-surface rounded-[32px] border-2 border-accent/30 py-6 text-[32px] font-black text-slate-900 dark:text-white text-center tracking-[12px] shadow-2xl shadow-accent/10
+bg-slate-50 dark:bg-surface rounded-2xl p-5 items-center border border-slate-200 dark:border-white/10 border-dashed
+bg-white dark:bg-surface rounded-t-[32px] p-6 max-h-[85%] shadow-2xl
+bg-white dark:bg-surface rounded-t-[32px] p-6 pb-10 shadow-2xl
+bg-white dark:bg-surface rounded-t-[40px] p-6 pb-10 border-t border-slate-100 dark:border-white/5 shadow-2xl
+bg-yellow-50 p-4 rounded-lg border border-yellow-200 flex-row items-center justify-between
+black-translucent
+Book
+Book a session
+Book a Session
+Book Now
+Book Session
+book-session-empty
+booked
+booking
+Booking ${b.id || b._id}
+Booking Failed
+Booking Tab
+booking-card-${b.id}
+bookings
+boolean; } const AUTH_KEY = 'welldhan_auth_oauth'; const THEME_KEY = 'welldhan_theme'; const TOKEN_BUFFER = 60000; // Refresh token 1 minute before expiry export const useAuthStore = create
+border-accent bg-accent/10
+border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-surface
+Business UPI ID
+business-outline
+button
+Button
+By accessing or using the WELLDHAN mobile application ("App"), you agree to be bound by these Terms and Conditions. WELLDHAN provides wellness coaching, sports venue management, and organic food delivery services specifically for gated communities.
+By registering, you agree to our{" "}
+By using our App, you consent to receive transactional and promotional messages via WhatsApp. You can opt-out by contacting our support or using the WhatsApp opt-out mechanism.
+cache
+calendar
+calendar-outline
+call-outline
+cancel
+Cancel
+Cancel Booking
+Cancel failed
+cancel-booking-${b.id}
+cancel-modal-btn
+cancel-pause-btn
+Cancelled
+card
+card-outline
+cash
+cash-outline
+cat-${cat}
+center
+Certification
+challenge_id
+Change Password
+checkmark
+checkmark-circle
+checkmark-circle-outline
+checkmark-done-outline
+chevron-forward
+Child
+Choose an action to begin.
+class
+clearTimeout(timer); } }, [token, role, isHydrated]); return (
+close
+close-circle-outline
+color
+Combo
+Communities
+Community ID
+community uuid
+communityId
+components
+Confirm Booking
+Confirm password
+Confirm Password
+confirm-add-member
+confirm-booking-btn
+confirm-edit-member
+confirm-mark-paid-btn
+confirm-pause-btn
+Confirmed
+confirmPassword
+constants
+Contact Community Manager on WhatsApp
+Contact Support
+Contact your community manager for assistance.
+contact-info-card
+contact-manager-btn
+contained
+Content-Type
+Continue
+Copying fonts from
+Copying images from
+Create a new account
+Create account
+Create Account
+Create Booking
+Create one
+create-expo-app
+Creating account...
+cube
+cube-outline
+Current Plan
+current-payment-card
+d} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }} ListEmptyComponent={
+Dairy
+danger
+dark
+Dark Mode
+dashboard
+Dashboard
+dashboard-payment-summary
+dashboard-recent-bookings
+dashboard-stats
+date
+default
+DELETE
+delete-member-${m.id}
+Delivered
+Delivering tomorrow 7:00 AM
+description
+destructive
+Development sessions
+devices.json
+dist/*
+divider
+Do you want to move existing files to /app-example instead of deleting them? (Y/n):
+document-text-outline
+Don't have an account? Create a new account
+Don't have an account?{" "}
+done
+Done
+Due
+Due: {p.due_date}
+Dues
+Edit
+Edit app/index.tsx to edit this screen.
+Edit email
+Edit Family Member
+Edit Profile
+Edit profile photo
+edit-avatar-btn
+edit-email-btn
+edit-member-${m.id}
+edit-member-age-input
+edit-member-name-input
+edit-relation-${r}
+edit-sport-${s}
+edit-stock-${inv.id}
+elevated
+email
+Email
+Email Address
+Email Input
+Email input field
+email-address
+email-input
+emailPassword
+en
+en-IN
+End secure session
+ENOENT
+Enter 6-digit OTP
+Enter a name
+Enter a valid number
+Enter stock quantity
+Enter your email
+Enter your name
+Enter your password
+error
+Error
+Error copying assets:
+eslint-config-expo/flat
+eslint/config
+Every day
+Experience
+expo start
+expo-router
+expo-router/build/entry
+expo-status-bar
+expo/metro-config
+expo/types
+Failed
+Failed to load bookings
+Failed to load dashboard
+Failed to load members
+Failed to send OTP
+Failed to update profile
+Family
+Family Members
+filter-${f}
+filter-${s}
+filter-tab-${f}
+fitness
+fitness-outline
+flat
+Flat {b.household?.flat_number || '-'}
+Flat {b.household?.flat_number}
+Flat {hh.flat_number}
+Flat {household?.flat_number}
+Flat {p.household?.flat_number}
+Flat / Apartment No. (optional)
+Flat Number
+flatNumber
+flex
+flex-[2]
+flex-1
+flex-1 ${!household?.food_plan_active ? 'opacity-40' : ''}
+flex-1 bg-[#0d1b13]
+flex-1 bg-black/60 justify-end
+flex-1 bg-white dark:bg-primary-dark
+flex-1 bg-white dark:bg-primary-dark items-center justify-center
+flex-1 items-center justify-center px-8
+flex-1 items-center p-3
+flex-1 items-center p-3 border-blue-500/20
+flex-1 items-center p-3 border-green-500/20
+flex-1 items-center p-3 border-red-500/20
+flex-1 justify-center items-center
+flex-1 p-4
+flex-1 px-6 pt-2
+flex-1 py-3 rounded-2xl border items-center ${activeFilter === f ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-surface border-slate-200 dark:border-white/10'}
+flex-1 py-3 rounded-2xl border items-center ${filter === f ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-surface border-slate-200 dark:border-white/10'}
+flex-1 py-3 rounded-xl border items-center ${mode === 'emailPassword' ? 'border-accent bg-accent/10' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-surface'}
+flex-1 py-3 rounded-xl border items-center ${mode === 'phoneOtp' ? 'border-accent bg-accent/10' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-surface'}
+flex-1 text-[15px] font-bold text-red-500
+flex-1 text-[15px] font-bold text-slate-900 dark:text-white
+flex-1 text-slate-900 dark:text-white font-bold text-base
+flex-row flex-wrap gap-2
+flex-row flex-wrap justify-center mt-2 px-2
+flex-row flex-wrap px-4 mb-6
+flex-row gap-2
+flex-row gap-2 mt-2 flex-wrap
+flex-row gap-2.5 mb-4
+flex-row gap-2.5 mb-5
+flex-row gap-3
+flex-row gap-3 flex-1
+flex-row gap-3 mt-4
+flex-row gap-3 mt-6 pb-4
+flex-row gap-4 flex-1 items-center
+flex-row gap-4 flex-1 items-start
+flex-row gap-4 items-center pl-2
+flex-row items-center gap-1.5 bg-orange-500/10 px-3 py-1.5 rounded-xl border border-orange-500/20
+flex-row items-center gap-1.5 flex-wrap
+flex-row items-center gap-1.5 mt-0.5
+flex-row items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-surface rounded-full border border-slate-100 dark:border-white/5
+flex-row items-center gap-2
+flex-row items-center gap-2 mt-1
+flex-row items-center gap-3
+flex-row items-center gap-3 flex-1
+flex-row items-center gap-4
+flex-row items-center gap-4 flex-1
+flex-row items-center gap-4 mb-4
+flex-row items-center gap-4 p-4
+flex-row items-center gap-4 p-4 ${idx !== arr.length - 1 ? 'border-b border-slate-100 dark:border-white/5' : ''}
+flex-row items-center gap-4 p-4 border-b border-slate-100 dark:border-white/5
+flex-row items-center justify-between
+flex-row items-center justify-between py-2 border-b border-slate-100 dark:border-white/5 last:border-0
+flex-row items-center justify-center gap-3 opacity-60
+flex-row items-center mt-1
+flex-row items-center p-4
+flex-row items-center p-4 border-b border-slate-100 dark:border-white/5
+flex-row items-center px-5 py-4 border-b border-slate-100 dark:border-white/5
+flex-row items-center py-4
+flex-row items-center py-4 border-b border-slate-50 dark:border-white/5
+flex-row justify-between items-center
+flex-row justify-between items-center border-l-4 border-l-accent
+flex-row justify-between items-center mb-3
+flex-row justify-between items-center mx-5 py-4 border-b border-slate-100 dark:border-white/5
+flex-row justify-between items-center p-4 rounded-2xl mb-2 border ${selectedMemberId === m.id ? 'bg-accent/10 border-accent' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/10'}
+flex-row justify-between items-center px-6 py-5 bg-white dark:bg-primary-dark border-t border-slate-100 dark:border-white/5 shadow-2xl
+flex-row justify-between items-start mb-4
+flex-row justify-between py-1.5
+flex-row px-5 gap-2 mb-6 mt-2
+flex-row px-5 gap-3 mb-8
+flex-row px-5 gap-3 mb-8 mt-2
+flex-start
+font-semibold text-gray-900
+font-semibold text-purple-900
+font-semibold text-red-900
+font-semibold text-yellow-900
+fonts
+food
+Food
+Food Delivery
+Food Delivery Tab
+Food delivery tomorrow at 7:00 AM. Tap to manage.
+Food History
+Food Inventory
+food-delivery-card
+food-history
+food-history-btn
+food-item-${pref.id}
+food-orders
+food-prefs
+food-summary
+For any refund-related queries, please contact us at support@welldhan.com or reach out via the WhatsApp support link in the App.
+forbidden
+frontend
+frontend/assets
+frontend/assets/fonts/*
+frontend/assets/images/*
+fs
+Full
+Full name
+Full Name
+Full Name Input
+fullName
+function
+gap-1
+gap-2
+gap-2 mt-1
+gap-3
+gap-3 mb-6
+gap-3 mt-1
+gap-4
+gap-6
+gap-8
+Get Started
+get-started-btn
+getMyStudents() as any, }); return (
+getRecentBookings() as any, }); const cards = stats ? [ { icon: 'home-outline', label: 'Total Families', value: stats.total_families, color: '#4ade80' }, { icon: 'people-outline', label: 'Total Trainers', value: stats.total_trainers, color: '#22c55e' }, { icon: 'calendar-outline', label: "Today's Bookings", value: stats.today_bookings, color: '#3b82f6' }, { icon: 'warning-outline', label: 'Pending Payments', value: stats.pending_payments, color: '#ef4444' }, { icon: 'cube-outline', label: 'Low Stock', value: stats.low_stock, color: '#a78bfa' }, { icon: 'cash-outline', label: 'MRR Collected', value: formatCurrency(stats.mrr), color: '#f59e0b' }, ] : []; return (
+getTrainerBookings() as any, }); return (
+Go back
+go-register-btn
+go-register-btn-legacy
+Good afternoon
+Good evening
+Good morning
+GPay
+gpay-pay-btn
+GPay/PhonePe/Paytm/BHIM/Cash
+Grain
+h-[50px] mt-2
+h-10
+h-12 mt-2
+h-12 mt-2 mb-2
+h-6
+h5
+h6
+handled
+height
+Helvetica
+Hi WELLDHAN Team, I need help with my account
+Hi WELLDHAN Team, I need help with my account. Flat ${household?.flat_number}
+Hi, my WELLDHAN ${monthYear} subscription of ₹${amount} is due. Paying to UPI: welldhan@okicici
+Hide password
+home
+Home
+Home Tab
+home-outline
+hooks
+Household Members
+HTTP ${response.status}
+http://localhost:8000/api
+https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&q=80
+https://pay.google.com/
+https://wa.me/?text=${msg}
+https://wa.me/91${household.community.manager_phone}?text=${msg}
+https://wa.me/91${managerPhone}?text=${msg}
+https://welldhan.com/
+https://welldhan.com/og-image.png
+i.stock_quantity
+icon
+IE=edge
+images
+Included
+index
+index.tsx
+Individual
+information-circle-outline
+insufficient_scope
+inv-filter-${cat}
+Invalid Number
+Invalid OTP
+inventory
+inventory-item-${inv.id}
+ios
+Item
+items-center
+items-center bg-slate-100 dark:bg-primary-dark px-3 py-2 rounded-2xl border border-slate-200 dark:border-white/5
+items-center gap-2 p-4
+items-center mb-[60px]
+items-center mr-4 w-20
+items-center mt-1
+items-center pt-14
+items-center pt-20 gap-4
+items-center py-10
+items-end gap-1
+items-end gap-1.5
+items-end gap-2
+Joined {formatDate(hh.join_date)}
+Karate
+keywords
+large
+Last Updated: March 2026
+leaf
+leaf-outline
+lg
+light
+link
+list-outline
+localStorage.getItem("token"), ); const [role, setRole] = useState
+lock-closed
+log-out
+log-out-outline
+Logged In
+Login
+Login failed
+Login successful
+Login with Email
+Login with email & password (all roles) or phone OTP
+Login with Phone OTP
+logo-whatsapp
+Logout
+Logout error:
+Low
+Low Stock
+low-stock-alert
+m.id} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24 }} ListEmptyComponent={
+mail-outline
+Manage Food
+Manage food delivery
+Manager
+Manager Dashboard
+Manager Email
+Manager name
+Manager Name
+Manager Phone
+manager-households
+manager-inventory
+Manager: {community?.manager_name}
+manager@example.com
+managerCommunityId
+managerEmail
+managerName
+managerPhone
+Mark as Paid
+Mark Paid
+Mark Payment as Paid
+mark-absent-${b.id}
+mark-paid-btn
+mark-present-${b.id}
+mb-0
+mb-10
+mb-2.5 p-3
+mb-3
+mb-3 p-3 ${isLow ? 'border-l-4 border-red-500' : ''}
+mb-3 p-4
+mb-3 p-4 ${p.is_overdue ? 'border-l-4 border-red-500' : ''}
+mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200
+mb-5
+mb-6
+mb-8
+mb-8 items-center justify-center
+md
+Member
+Member since {joinDate}
+member-${m.id}
+member-age-input
+member-card-${m.id}
+member-name-input
+member-select-${m.id}
+members
+metro-cache
+Min: {inv.reorder_level}
+Missed
+Missing challenge id
+Missing Details
+MMMM YYYY
+mobile-web-app-capable
+mode-email-btn
+mode-phone-btn
+module
+moon-outline
+MRR Collected
+mt-1
+mt-10
+mt-2
+mt-4
+mt-4 bg-accent/10 rounded-2xl p-4 border border-accent/20
+mt-6
+mt-8 px-5
+mx-5 mb-2 py-2.5 px-4 flex-row items-center rounded-xl
+mx-5 mb-6
+mx-5 mb-8
+mx-5 mt-6 shadow-sm
+mx-5 my-6 items-center p-8
+mx-5 p-0 overflow-hidden shadow-sm
+My Bookings
+My Family
+My Profile
+My Slots
+My Students
+my-bookings
+n[0]) .slice(0, 2) .join('') .toUpperCase(); } export function getSportIcon(sport: string): string { const icons: Record
+Name
+Name and age are required
+Name cannot be empty
+nativewind
+nativewind/babel
+nativewind/preset
+nativewind/types
+New OTP sent to ${where}
+next
+No
+No {activeFilter.toLowerCase()} bookings
+No available slots
+No items found
+No members added yet
+No orders found
+No payment records found
+No residents found
+No sessions today
+No sessions today. Tap to book a session.
+No slots assigned yet
+No students yet
+No upcoming bookings.
+none
+NoShow
+noshow-stat
+Note: Phone number and Flat number cannot be changed manually. Please contact support if needed.
+Notifications
+notifications-outline
+number-pad
+numeric
+og:description
+og:image
+og:title
+og:type
+og:url
+Oil
+OK
+order-group-${date}
+Organic basket delivery
+OTP
+OTP Sent
+OTP sent to{"\n"}
+otp-input
+outline
+outlined
+Overdue
+p-0 overflow-hidden
+p-1
+p-4
+p-4 items-start gap-2
+package-card
+padding
+Paid
+Paid on {formatDate(p.payment_date)}
+Parent
+password
+Password
+Password input field
+Password must be at least 6 characters.
+password-input
+password-login-btn
+Passwords do not match.
+Past
+PATCH
+path
+Pause
+Pause All
+Pause Deliveries Until
+pause-circle-outline
+pause-deliveries-btn
+Pay
+Pay via UPI / GPay
+payer-upi-input
+Payment History
+Payment marked as paid.
+Payment Method
+payment-history-${p.id}
+payment-method-input
+payments
+Payments
+Payments Tab
+Payments: {formatCurrency(paymentSummary.total_collected)} collected · {paymentSummary.pct_paid}% paid
+pencil
+pencil-outline
+Pending
+Pending Dues
+Pending Payments
+Pending Revenue
+pending-payment-${p.id}
+pending-payments
+pending-stat
+people
+people-outline
+person
+phone
+Phone
+Phone Number
+Phone number input field
+Phone OTP
+phone-input
+phone-pad
+Phone: {community?.manager_phone}
+phoneOtp
+platform
+Please enter a valid 10-digit phone number
+Please enter a valid email address
+Please enter a valid email address.
+Please enter email and password
+Please enter the 6-digit OTP
+Please enter your full name.
+Please enter your password.
+Please select a member
+POST
+Present
+prev, }); return (
+primary
+Primary
+privacy
+Privacy
+Privacy content placeholder.
+Privacy Policy
+privacy-link
+Professional Info
+profile
+Profile
+Profile Tab
+profile-avatar
+Promise
+public
+public/fonts/
+public/images/
+PUT
+px-2 py-0.5 rounded-lg
+px-2 py-1 rounded-lg
+px-2 py-1 rounded-lg self-start mt-2
+px-2.5 py-0.5 rounded-full border
+px-2.5 py-1 rounded-full border
+px-3
+px-3 py-1.5 rounded-full border
+px-3 py-1.5 rounded-xl
+px-4
+px-4 py-1.5 rounded-full mb-4
+px-4 py-2 rounded-full border ${filter === cat ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-surface border-slate-200 dark:border-white/10'}
+px-4 py-2 rounded-full border ${filter === s ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-surface border-slate-200 dark:border-white/10'}
+px-4 py-2 rounded-xl border ${editModal.assigned_sport === s ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-primary-dark border-slate-200 dark:border-white/10'}
+px-4 py-2 rounded-xl border ${editModal.relation === r ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-primary-dark border-slate-200 dark:border-white/10'}
+px-4 py-2 rounded-xl border ${form.assigned_sport === s ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-primary-dark border-slate-200 dark:border-white/10'}
+px-4 py-2 rounded-xl border ${form.relation === r ? 'bg-accent border-accent' : 'bg-slate-50 dark:bg-primary-dark border-slate-200 dark:border-white/10'}
+px-5
+px-5 mb-4 mt-2
+px-5 mb-8
+px-5 mt-5
+px-5 pt-2 mb-6
+px-5 py-2
+px-6 justify-center
+py-3
+py-5
+py-5 w-full mb-8 shadow-2xl shadow-accent/40
+Quick Actions
+quick-book-btn
+quick-bookings-btn
+quick-food-btn
+radio
+Rating
+rating-stat
+Re-seed Data
+Re-seed Database
+react
+react-dom/client
+react-native
+react-native-safe-area-context
+react-router-dom
+readline
+red
+refresh-outline
+refund
+Refund
+Refund & Cancellation
+Refund content placeholder.
+Refund Policy
+refund-link
+Refunds
+Register
+Register as Member, Trainer, or Manager
+register-back-btn
+register-role-${r}
+register-submit-btn
+Registered
+Registration failed
+Relation
+relation-${r}
+relative
+Remind
+Remove
+Remove Member
+request
+request_failed
+Resend OTP
+Resend OTP in {countdown}s
+resend-btn
+reset-project
+resident-${hh.id}
+residents
+Residents
+residents-search
+Retry
+Revenue
+rgba(0,0,0,0.04)
+rgba(0,0,0,0.05)
+rgba(0,0,0,0.08)
+rgba(0,0,0,0.6)
+rgba(15,23,42,0.06)
+rgba(16,185,129,0.05)
+rgba(16,185,129,0.06)
+rgba(16,185,129,0.2)
+rgba(239,68,68,0.08)
+rgba(239,68,68,0.2)
+rgba(255, 255, 255, 0.05)
+rgba(255, 255, 255, 0.08)
+rgba(255, 255, 255, 0.1)
+rgba(255,255,255,0.08)
+rgba(26, 26, 46, 0.7)
+rgba(74, 222, 128, 0.3)
+Roboto
+root
+row
+s + (p.amount_due || 0), 0); return (
+s wellness {
+s.id} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 }} ListEmptyComponent={
+safeBack navigation failed
+sans-serif
+Sat
+Save
+Save Changes
+save-stock
+Scheduled
+school-outline
+screen-title
+scripts
+Search by name or flat...
+secondary
+Secure OAuth 2.0 Access
+See all
+Seed
+Seed Demo Data
+Seed failed
+seed-data-btn
+Segoe UI
+Select ${item.name} for delivery
+Select Member
+Select Members
+Self
+Send OTP
+send-otp-btn
+Session Expired
+session-card
+Sessions Attended
+Settings & Preferences
+settings.json
+share-payment-btn
+shield
+shield-checkmark
+shield-checkmark-outline
+short
+Show password
+Sign in
+Sign Out
+Signing in...
+Skipped
+slide
+slide_from_right
+slot-${slot.id}
+slots
+Slots
+sm
+small
+Something went wrong
+space-between
+SpaceMono
+Spice
+spinner
+sport
+Sport
+sport-${s}
+Spouse
+stat-${s.label}
+static
+Stock
+Stock Quantity (${edit?.unit})
+Stock updated successfully
+stock-qty-input
+student-${s.id}
+students
+Students
+summary_large_image
+Sun
+sunny-outline
+Support
+Swimming
+Switch between light and dark themes
+system-ui
+tab
+tailwindcss
+Tap to book a session →
+terms
+Terms
+Terms & Conditions
+Terms content placeholder.
+terms-link
+test-credentials
+text
+text-[10px] font-black text-accent uppercase
+text-[10px] font-black uppercase
+text-[10px] font-bold
+text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight
+text-[10px] font-bold text-slate-500 dark:text-slate-400
+text-[10px] font-bold uppercase
+text-[10px] font-bold uppercase tracking-wider
+text-[10px] text-accent font-black uppercase tracking-wider
+text-[10px] text-green-500 font-bold uppercase tracking-wider
+text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-wider mb-1
+text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase
+text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1
+text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium
+text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase font-bold tracking-tight
+text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1
+text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase
+text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight
+text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight text-center mt-1
+text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider
+text-[11px] font-black text-accent uppercase tracking-[2px]
+text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 ml-1
+text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 ml-1
+text-[11px] text-slate-400 dark:text-slate-500 font-black tracking-[2px] uppercase mb-4 ml-1
+text-[11px] text-slate-400 dark:text-slate-500 mt-2 font-bold uppercase tracking-tight
+text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium
+text-[12px] font-bold
+text-[12px] font-bold ${filter === cat ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}
+text-[13px] font-black text-slate-900 dark:text-white
+text-[13px] font-bold ${activeFilter === f ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}
+text-[13px] font-bold ${editModal.assigned_sport === s ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}
+text-[13px] font-bold ${editModal.relation === r ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}
+text-[13px] font-bold ${filter === f ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}
+text-[13px] font-bold ${filter === s ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}
+text-[13px] font-bold ${form.assigned_sport === s ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}
+text-[13px] font-bold ${form.relation === r ? 'text-primary-dark' : 'text-slate-500 dark:text-slate-400'}
+text-[13px] font-bold text-slate-500 dark:text-slate-400
+text-[13px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 ml-1
+text-[13px] font-semibold text-accent mt-1
+text-[13px] text-slate-400 dark:text-slate-500 font-bold mb-6
+text-[13px] text-slate-500 dark:text-slate-400
+text-[13px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase mb-3 ml-1
+text-[13px] text-slate-500 dark:text-slate-400 mt-0.5
+text-[15px] font-bold text-slate-900 dark:text-white
+text-[15px] font-bold text-slate-900 dark:text-white mt-0.5
+text-[15px] text-slate-500 dark:text-slate-400 leading-6
+text-[15px] text-slate-600 dark:text-slate-400 leading-6
+text-[16px] font-black text-slate-900 dark:text-white
+text-[22px] font-black text-accent mb-3 tracking-wider
+text-[30px]
+text-[34px]
+text-[34px] font-black text-slate-900 dark:text-white mb-6
+text-[52px] font-black text-white tracking-[4px] mb-4 text-center
+text-2xl
+text-2xl font-black text-accent
+text-2xl font-black text-blue-500
+text-2xl font-black text-green-500
+text-2xl font-black text-red-500
+text-2xl font-black text-slate-900 dark:text-white
+text-2xl font-black text-slate-900 dark:text-white mb-2
+text-2xl font-black text-slate-900 dark:text-white mt-0.5
+text-2xl font-black text-slate-900 dark:text-white mt-1
+text-2xl font-black text-slate-900 dark:text-white mt-4
+text-2xl font-bold
+text-3xl
+text-3xl font-black text-primary dark:text-accent
+text-3xl font-black text-slate-900 dark:text-white mb-2
+text-3xl font-bold
+text-4xl font-black text-accent
+text-4xl opacity-40
+text-accent
+text-accent font-black text-lg
+text-accent font-black text-sm px-2
+text-accent font-bold
+text-accent text-[10px] font-black uppercase tracking-widest
+text-accent text-[13px] font-black uppercase tracking-tight
+text-accent text-[13px] font-semibold
+text-accent text-base font-bold
+text-accent text-sm font-black uppercase tracking-widest underline decoration-accent/30 underline-offset-4
+text-accent text-sm font-bold underline
+text-accent text-sm font-semibold
+text-accent text-xs font-black uppercase tracking-widest
+text-accent text-xs font-bold underline
+text-accent text-xs font-bold uppercase tracking-wider
+text-accent/60 text-[10px] font-black uppercase
+text-base font-black ${isLow ? 'text-red-500' : 'text-green-500'}
+text-base font-black text-red-500
+text-base font-black text-slate-900 dark:text-white
+text-base font-bold text-accent
+text-base font-bold text-slate-500 dark:text-slate-400
+text-base font-bold text-slate-900 dark:text-white
+text-base font-bold text-slate-900 dark:text-white mb-3
+text-blue-700 text-xs mt-1
+text-blue-800 text-sm
+text-center mt-4 text-lg text-red-600
+text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mb-6
+text-gray-500
+text-gray-600
+text-lg
+text-lg font-black ${current.is_paid ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}
+text-lg font-black text-accent
+text-lg font-black text-accent mb-3
+text-lg font-black text-slate-900 dark:text-white
+text-lg font-black text-slate-900 dark:text-white px-5 mb-4
+text-lg font-bold text-accent mb-1
+text-lg font-bold text-slate-900 dark:text-white
+text-lg font-semibold mb-2
+text-lg text-slate-400 text-center leading-7 font-medium
+text-orange-500 text-[11px] font-black uppercase tracking-wider
+text-red-500
+text-red-500 font-black text-sm
+text-red-500 text-[9px] font-black uppercase tracking-wider
+text-red-600 text-center mb-4
+text-slate-400
+text-slate-400 dark:text-slate-500 mt-1 font-semibold
+text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider mb-0.5
+text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest text-center absolute bottom-10 left-0 right-0
+text-slate-400 dark:text-slate-500 text-[11px] font-black uppercase tracking-[2px] ml-1 mb-4
+text-slate-400 dark:text-slate-500 text-[11px] mt-3 bg-slate-50 dark:bg-white/5 p-4 rounded-xl leading-5 border border-slate-100 dark:border-white/5 mb-8
+text-slate-400 dark:text-slate-500 text-[13px]
+text-slate-400 dark:text-slate-500 text-[13px] text-center leading-5 px-4
+text-slate-400 dark:text-slate-600 text-[10px] mt-2.5 uppercase tracking-[2px] font-black
+text-slate-400 dark:text-slate-600 text-center text-[10px] mt-10 font-black uppercase tracking-[3px]
+text-slate-400 text-[10px]
+text-slate-400 text-xs font-semibold
+text-slate-500 dark:text-slate-400 mb-8 font-medium
+text-slate-500 dark:text-slate-400 ml-1.5 font-bold
+text-slate-500 dark:text-slate-400 text-[15px] mb-1.5
+text-slate-500 dark:text-slate-400 text-base
+text-slate-500 dark:text-slate-400 text-base font-medium
+text-slate-500 dark:text-slate-400 text-sm font-medium
+text-slate-500 dark:text-slate-400 text-sm leading-5 mb-4
+text-slate-500 dark:text-slate-400 text-xs
+text-slate-500 dark:text-slate-400 text-xs mt-0.5
+text-slate-500 dark:text-slate-400 text-xs text-center
+text-slate-500 font-bold text-[13px] uppercase tracking-widest
+text-slate-500 text-[11px] font-bold uppercase tracking-[2px] text-center absolute bottom-10 self-center
+text-slate-900 dark:text-white font-bold text-base
+text-sm
+text-sm font-bold
+text-sm font-bold ${mode === 'emailPassword' ? 'text-accent' : 'text-slate-400'}
+text-sm font-bold ${mode === 'phoneOtp' ? 'text-accent' : 'text-slate-400'}
+text-sm font-bold text-slate-900 dark:text-white
+text-sm text-accent font-bold mt-0.5
+text-sm text-gray-600
+text-sm text-purple-700
+text-sm text-red-700
+text-sm text-slate-500 dark:text-slate-400
+text-sm text-slate-500 dark:text-slate-400 font-bold
+text-sm text-slate-500 dark:text-slate-400 font-medium
+text-sm text-slate-500 dark:text-slate-400 leading-5
+text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium
+text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium
+text-sm text-slate-600 dark:text-slate-400 font-medium
+text-sm text-yellow-700
+text-xl
+text-xl font-black
+text-xl font-black text-accent
+text-xl font-black text-slate-900 dark:text-white
+text-xl font-black text-slate-900 dark:text-white mb-2
+text-xl font-black text-slate-900 dark:text-white mb-4
+text-xl font-black text-slate-900 dark:text-white mb-6
+text-xl font-black text-slate-900 dark:text-white tracking-tight flex-1
+text-xl font-bold text-slate-900 dark:text-white
+text-xl mr-2
+text-xs font-bold
+text-xs font-bold text-accent mt-1.5
+text-xs font-semibold text-accent mt-1
+text-xs font-semibold text-center ${household?.food_plan_active ? 'text-slate-900 dark:text-white' : 'text-slate-400'}
+text-xs text-accent font-bold
+text-xs text-accent font-bold mt-1
+text-xs text-slate-400 dark:text-slate-500 mt-0.5
+text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-medium
+text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest
+text-xs text-slate-500 dark:text-slate-400 font-medium
+text-xs text-slate-500 dark:text-slate-400 mt-0.5
+text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium
+text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium
+text-xs text-slate-900 dark:text-white font-semibold mb-1
+text-xs text-slate-900 dark:text-white font-semibold text-center
+theme-color
+This feature requires current password verification
+This Month
+This Week
+This will add seed data if not already seeded. Continue?
+This will deactivate the member.
+time-outline
+to
+today-sessions-stat
+Today's Attendance
+Today's Bookings
+Today's Session
+Today's session: ${upcoming.slot?.sport} at ${upcoming.slot?.slot_time}
+Today's Sessions
+Toggle Dark Mode
+Toggle Notifications
+toggle-${pref.id}
+token
+Token expires: {new Date(tokenExpiresAt).toLocaleTimeString()}
+Token refresh failed:
+Tomorrow 7:00 AM
+top
+Total Bookings
+Total Families
+Total Members
+Total Revenue
+Total Slots
+Total Trainers
+total-slots-stat
+tracking-[2px]
+Trainer
+Trainer name
+trainer-logout-btn
+trainer-profile-card
+trainer-slot-${s.id}
+trainer-slots
+trainer-students
+trainer-today
+trainer@example.com
+trainerName
+Transaction ID
+Transforming community living with elite coaching and farm-fresh organics.
+transparent
+trash-outline
+true
+twitter:card
+twitter:description
+twitter:image
+twitter:title
+twitter:url
+unauthorized
+Unexpected login response
+Unknown
+Upcoming
+Upcoming Bookings
+Update admin credentials
+Update Stock
+Update your account information below.
+UPI Transaction ID
+upi-info-card
+upi-txn-input
+upi://pay?pa=welldhan@okicici&pn=WELLDHAN&am=${amount}&cu=INR&tn=WELLDHAN+${monthYear.replace(/ /g, '+')}
+uppercase
+Use any UPI app (PhonePe, Paytm, BHIM) to pay
+useAuth must be used within AuthProvider
+User
+User home placeholder. Migrate RN content here.
+Users are expected to maintain decorum at sports venues. Any damage to equipment or facilities may lead to suspension of services and recovery of costs.
+utf-8
+Validation
+Vegetable
+Verification failed
+Verification Failed
+Verify
+Verify & Login
+Verify OTP
+verify-btn
+Version 1.0.0
+View my bookings
+view-members-btn
+viewport
+vite
+void; }; const AuthContext = createContext
+void; className?: string; style?: ViewStyle | ViewStyle[]; titleClassName?: string; subtitleClassName?: string; variant?: "default" | "elevated" | "flat" | "accented"; } export const Card: React.FC
+void; variant?: "primary" | "secondary" | "outline" | "danger"; size?: "sm" | "md" | "lg"; loading?: boolean; disabled?: boolean; icon?: keyof typeof Ionicons.glyphMap; className?: string; style?: ViewStyle | ViewStyle[]; testID?: string; accessibilityLabel?: string; } export const Button: React.FC
+w-[110px] h-[110px] rounded-full bg-[#16241c] items-center justify-center border-3 border-accent flex-row gap-1.5 shadow-lg shadow-accent/50
+w-[52px] h-[52px] rounded-full items-center justify-center border-2 border-accent/20
+w-[52px] h-[52px] rounded-full items-center justify-center mb-1.5
+w-[52px] h-[52px] rounded-xl
+w-[52px] h-[52px] rounded-xl items-center justify-center
+w-1 h-1 rounded-full bg-slate-700
+w-1/2 p-1
+w-10 h-1 bg-slate-200 dark:bg-white/10 rounded-full self-center mb-6
+w-10 h-10 rounded-2xl bg-blue-500/10 items-center justify-center mr-4
+w-10 h-10 rounded-2xl bg-green-500/10 items-center justify-center mr-4
+w-10 h-10 rounded-full bg-accent/20 items-center justify-center
+w-10 h-10 rounded-full items-center justify-center bg-slate-50 dark:bg-surface mr-3
+w-10 h-10 rounded-xl bg-accent/10 items-center justify-center
+w-10 h-10 rounded-xl bg-red-500/10 items-center justify-center
+w-10 h-10 rounded-xl bg-red-500/10 items-center justify-center border border-red-500/20
+w-10 h-10 rounded-xl items-center justify-center
+w-11 h-11 rounded-full bg-accent items-center justify-center shadow-lg shadow-accent/40
+w-11 h-11 rounded-full bg-accent/20 items-center justify-center border-2 border-accent/20
+w-11 h-11 rounded-full bg-green-500/10 items-center justify-center
+w-11 h-11 rounded-full bg-slate-50 dark:bg-surface items-center justify-center border border-slate-100 dark:border-white/5
+w-11 h-11 rounded-xl bg-accent/20 items-center justify-center
+w-12 h-1.5 bg-slate-200 dark:bg-slate-700/50 self-center rounded-full mb-8
+w-12 h-12 rounded-2xl items-center justify-center ${current.is_paid ? 'bg-green-500/20' : 'bg-red-500/20'}
+w-12 h-12 rounded-full bg-accent/20 items-center justify-center border-2 border-accent/20
+w-12 h-12 rounded-full border-2 border-accent
+w-14 h-14 rounded-full border-2 border-accent shadow-lg shadow-accent/20
+w-14 h-14 rounded-xl
+w-2.5 h-2.5 rounded-full ${hh.is_active ? 'bg-green-500' : 'bg-red-500'} shadow-sm
+w-20 h-20 rounded-full bg-slate-50 dark:bg-surface items-center justify-center border border-slate-100 dark:border-white/5
+w-24 h-24 rounded-full bg-accent/20 items-center justify-center border-4 border-accent mb-4
+w-24 h-24 rounded-full bg-slate-100 dark:bg-surface items-center justify-center border-2 border-accent/30 shadow-lg shadow-accent/20
+w-24 h-24 rounded-full border-4 border-accent mb-4
+w-5 h-5 rounded-full
+w-6 h-6 rounded-full border-2 items-center justify-center ${selectedMemberId === m.id ? 'bg-accent border-accent' : 'border-slate-300 dark:border-white/20'}
+w-8 h-8 rounded-lg bg-slate-100 dark:bg-primary-dark items-center justify-center border border-slate-200 dark:border-white/5
+w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 items-center justify-center mr-4
+w-full items-center
+warning
+warning-outline
+WD
+We collect personal information such as name, email, phone number, and flat number to provide wellness and food services. We also collect device identifiers (FCM tokens) for notifications.
+We implement standard security measures to protect your data. However, no method of transmission over the internet is 100% secure.
+We may update this policy periodically. Your continued use of the App signifies your acceptance of the changes.
+We use Razorpay and PayU for payment processing. These providers have their own privacy policies. We also use WhatsApp APIs for messaging.
+web
+website
+Weekdays
+Welcome
+Welcome Back 👋
+Welcome back,
+Welcome to Welldhan Web
+Welldhan
+WELLDHAN
+Welldhan (web)
+WELLDHAN | Community Wellness & Organic Food
+WELLDHAN and its trainers are not liable for any physical injuries sustained during sports activities. Users are advised to consult a physician before starting any physical regimen.
+WELLDHAN provides premium wellness coaching, sports venue management, and organic food delivery specifically for gated communities.
+WELLDHAN uses secure payment gateways like Razorpay and PayU. By making a payment, you agree to their terms of service. All transactions are processed in Indian Rupees (INR). Payments for monthly subscriptions must be made in advance.
+WELLDHAN v1.0.0 · com.welldhan.app
+welldhan_auth
+welldhan_auth_oauth
+welldhan_notifications_enabled
+welldhan_theme
+welldhan@okicici
+wellness, sports, organic food, gated community, coaching, badminton, tennis, healthy living
+width=device-width, initial-scale=1, shrink-to-fit=no
+width=device-width, initial-scale=1.0
+window
+with {upcoming.trainer?.name}
+X-UA-Compatible
+xl
+yes
+Yes, Cancel
+Yoga
+You do not have admin privileges
+You do not have permission to seed data
+You have the right to access, correct, or delete your personal information. Contact us for any data-related queries.
+You have turned off all WELLDHAN notifications.
+You will receive booking, food, and payment reminders.
+you@example.com
+Your community's wellness {'\n'}
+Your dashboard
+Your data is used to manage bookings, track food orders, and facilitate communication via WhatsApp. We do not sell your personal information to third parties.
+your email
+Your Food Basket
+Your name
+your phone
+Your profile has been updated.
+Your session has been confirmed.
+Your session has expired. Please log in again.
+Your UPI ID
+Your UPI ID (payer)
+zustand
