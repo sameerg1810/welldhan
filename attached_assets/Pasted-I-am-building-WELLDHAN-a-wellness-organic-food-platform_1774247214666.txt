@@ -1,0 +1,569 @@
+I am building WELLDHAN — a wellness + organic food platform for gated communities.
+
+TECH STACK:
+- Frontend: Vite + React.js + TypeScript + Material UI (MUI v5)
+- Backend: FastAPI + MongoDB (already built — auth routes exist)
+- State: React Query (TanStack Query) for server state + Zustand for auth/UI state
+- HTTP: Axios with interceptors for JWT token
+- Routing: React Router v6
+- Forms: React Hook Form + Zod validation
+- Theme: Dark green (#1a4d2e primary, #2d7a47 secondary, #4ade80 accent)
+
+EXISTING AUTH (already done in backend):
+- POST /auth/login → email + password → returns challenge_id + masked phone
+- POST /auth/send-otp → phone → sends OTP via Gmail SMTP
+- POST /auth/verify-otp → phone + otp → returns { token, role, user_id, user_data }
+- GET /auth/me → returns logged-in user data
+- Roles: User, Trainer, Manager, Admin
+
+════════════════════════════════════
+STEP 1 — BACKEND SCHEMAS (app/schemas/)
+════════════════════════════════════
+Follow exact pattern of existing app/schemas/auth.py using Pydantic BaseModel.
+Create these files:
+
+FILE: app/schemas/household.py
+class UpdateHouseholdRequest(BaseModel):
+    primary_name: Optional[str] = None
+    primary_phone: Optional[str] = None
+    flat_number: Optional[str] = None
+    plan_type: Optional[str] = None
+    food_plan_active: Optional[bool] = None
+
+class AddMemberRequest(BaseModel):
+    member_name: str
+    age: int
+    relation: str  # Self/Spouse/Child/Parent
+    assigned_sport: str  # Badminton/Karate/Yoga/Swimming/None
+    phone: Optional[str] = None
+
+class UpdateMemberRequest(BaseModel):
+    member_name: Optional[str] = None
+    age: Optional[int] = None
+    assigned_sport: Optional[str] = None
+    is_active: Optional[bool] = None
+
+FILE: app/schemas/booking.py
+class CreateBookingRequest(BaseModel):
+    member_id: str
+    slot_id: str
+    session_date: str  # YYYY-MM-DD
+    notes: Optional[str] = None
+
+class UpdateBookingStatusRequest(BaseModel):
+    status: str  # Confirmed/Attended/NoShow/Cancelled
+
+class MarkAttendanceRequest(BaseModel):
+    booking_id: str
+    status: str  # Attended/NoShow
+
+FILE: app/schemas/food.py
+class ToggleFoodRequest(BaseModel):
+    food_item_id: str
+    is_selected: bool
+    default_quantity: Optional[float] = 1.0
+
+class PauseFoodRequest(BaseModel):
+    pause_until: str  # YYYY-MM-DD or empty to unpause
+
+class UpdatePreferenceRequest(BaseModel):
+    pref_id: str
+    default_quantity: float
+    is_selected: bool
+
+FILE: app/schemas/payment.py
+class MarkPaidRequest(BaseModel):
+    payment_id: str
+    upi_transaction_id: str
+    payer_upi_id: str
+    payment_method: str  # GPay/PhonePe/Paytm/BHIM/Cash
+
+FILE: app/schemas/slot.py
+class CreateSlotRequest(BaseModel):
+    sport: str
+    trainer_id: str
+    slot_time: str
+    slot_days: str
+    max_capacity: int
+    location: str
+    community_id: str
+
+class UpdateSlotRequest(BaseModel):
+    slot_time: Optional[str] = None
+    max_capacity: Optional[int] = None
+    location: Optional[str] = None
+    is_available: Optional[bool] = None
+
+FILE: app/schemas/trainer.py
+class UpdateTrainerRequest(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    certification: Optional[str] = None
+    experience_years: Optional[int] = None
+    image_url: Optional[str] = None
+
+class RateTrainerRequest(BaseModel):
+    trainer_id: str
+    rating: float
+
+FILE: app/schemas/food_inventory.py
+class CreateFoodItemRequest(BaseModel):
+    name: str
+    category: str
+    unit: str
+    price_per_unit: float
+    stock_quantity: float
+    reorder_level: float
+    is_organic: bool
+    supplier_name: str
+    image_url: Optional[str] = None
+
+class UpdateStockRequest(BaseModel):
+    item_id: str
+    stock_quantity: float
+
+════════════════════════════════════
+STEP 2 — BACKEND ROUTERS (app/routers/)
+════════════════════════════════════
+Follow exact pattern of app/routers/auth.py.
+Use get_db(), Depends(get_current_user), strip_private_fields(), new_id().
+Role guard pattern: if current_user["role"] not in ["Manager","Admin"]: raise HTTPException(403, "Not authorized")
+
+FILE: app/routers/households.py
+GET    /households/me                → return household + package + community + members list
+PATCH  /households/me                → update (UpdateHouseholdRequest) — User only
+GET    /households/me/members        → list members for household
+POST   /households/me/members        → add member (AddMemberRequest) — User only
+PATCH  /households/me/members/{id}   → update member — User only
+DELETE /households/me/members/{id}   → soft delete (is_active=False) — User only
+GET    /households                   → all households — Manager/Admin only
+GET    /households/{id}              → single household detail — Manager/Admin only
+
+FILE: app/routers/bookings.py
+POST   /bookings                     → create booking, check spots_left > 0, increment slot.current_booked
+GET    /bookings/mine                → household bookings sorted by session_date desc
+GET    /bookings/mine/upcoming       → status=Confirmed + session_date >= today
+GET    /bookings/mine/past           → session_date < today
+PATCH  /bookings/{id}/cancel         → set Cancelled, decrement slot.current_booked — User only
+GET    /bookings/trainer             → today's bookings for trainer's slots — Trainer only
+PATCH  /bookings/attendance          → mark attended/noshow (MarkAttendanceRequest) — Trainer only
+GET    /bookings/all                 → all bookings — Manager/Admin only
+
+FILE: app/routers/food.py
+GET    /food/inventory               → all food items where is_available=True
+GET    /food/preferences             → household preferences joined with food_inventory
+POST   /food/preferences/toggle      → upsert toggle (ToggleFoodRequest) — User only
+PATCH  /food/preferences/{id}        → update quantity/toggle — User only
+POST   /food/preferences/pause       → pause all deliveries (PauseFoodRequest) — User only
+GET    /food/orders/mine             → household food orders sorted by delivery_date desc
+GET    /food/orders/today            → all orders delivery_date=today — Manager/Admin only
+GET    /food/inventory/low-stock     → items where stock < reorder_level — Manager/Admin only
+PATCH  /food/inventory/{id}/stock    → update stock (UpdateStockRequest) — Manager/Admin only
+POST   /food/inventory               → create food item (CreateFoodItemRequest) — Admin only
+
+FILE: app/routers/payments.py
+GET    /payments/mine                → household payment history
+GET    /payments/mine/current        → current month payment status
+PATCH  /payments/mark-paid          → mark paid (MarkPaidRequest) — User only
+GET    /payments/pending             → households with is_paid=False — Manager/Admin only
+GET    /payments/all                 → all payments with month_year filter — Manager/Admin only
+POST   /payments/generate-monthly   → generate records for all active households — Admin only
+
+FILE: app/routers/slots.py
+GET    /slots                        → all available slots with trainer info
+GET    /slots/by-sport/{sport}       → filter by sport
+GET    /slots/trainer                → trainer's own slots — Trainer only
+POST   /slots                        → create slot — Manager/Admin only
+PATCH  /slots/{id}                   → update slot — Manager/Admin only
+DELETE /slots/{id}                   → soft delete — Admin only
+
+FILE: app/routers/trainers.py
+GET    /trainers                     → all active trainers
+GET    /trainers/by-sport/{sport}    → filter by sport
+GET    /trainers/me                  → own profile — Trainer only
+PATCH  /trainers/me                  → update own profile — Trainer only
+GET    /trainers/me/students         → members where assigned_sport matches — Trainer only
+POST   /trainers/rate                → rate trainer (RateTrainerRequest) — User only
+GET    /trainers/all                 → all including inactive — Manager/Admin only
+
+FILE: app/routers/dashboard.py
+GET    /dashboard/stats              → total families, trainers, today bookings, pending payments, low stock, MRR
+GET    /dashboard/recent-bookings    → last 10 bookings
+GET    /dashboard/payment-summary    → current month collected vs pending
+
+Register ALL new routers in app/main.py with app.include_router(router)
+
+════════════════════════════════════
+STEP 3 — FRONTEND (Vite + React + MUI)
+════════════════════════════════════
+
+FILE: src/lib/axios.ts
+- Create axios instance with baseURL from import.meta.env.VITE_API_URL
+- Request interceptor: attach Authorization: Bearer {token} from localStorage
+- Response interceptor: on 401 → clear auth store → redirect to /login
+
+FILE: src/store/authStore.ts (Zustand)
+interface AuthState {
+  token: string | null
+  role: 'User' | 'Trainer' | 'Manager' | 'Admin' | null
+  userId: string | null
+  userData: any | null
+  setAuth: (token, role, userId, userData) => void
+  clearAuth: () => void
+}
+Persist to localStorage using zustand/middleware persist.
+
+FILE: src/api/households.ts
+export const householdsApi = {
+  getMe: () => axios.get('/households/me'),
+  updateMe: (data) => axios.patch('/households/me', data),
+  getMembers: () => axios.get('/households/me/members'),
+  addMember: (data) => axios.post('/households/me/members', data),
+  updateMember: (id, data) => axios.patch(`/households/me/members/${id}`, data),
+  deleteMember: (id) => axios.delete(`/households/me/members/${id}`),
+  getAll: () => axios.get('/households'),
+  getById: (id) => axios.get(`/households/${id}`),
+}
+
+FILE: src/api/bookings.ts
+export const bookingsApi = {
+  create: (data) => axios.post('/bookings', data),
+  getMine: () => axios.get('/bookings/mine'),
+  getUpcoming: () => axios.get('/bookings/mine/upcoming'),
+  getPast: () => axios.get('/bookings/mine/past'),
+  cancel: (id) => axios.patch(`/bookings/${id}/cancel`),
+  getTrainerToday: () => axios.get('/bookings/trainer'),
+  markAttendance: (data) => axios.patch('/bookings/attendance', data),
+  getAll: () => axios.get('/bookings/all'),
+}
+
+FILE: src/api/food.ts
+export const foodApi = {
+  getInventory: () => axios.get('/food/inventory'),
+  getPreferences: () => axios.get('/food/preferences'),
+  toggleItem: (data) => axios.post('/food/preferences/toggle', data),
+  updatePreference: (id, data) => axios.patch(`/food/preferences/${id}`, data),
+  pauseAll: (data) => axios.post('/food/preferences/pause', data),
+  getMyOrders: () => axios.get('/food/orders/mine'),
+  getTodayOrders: () => axios.get('/food/orders/today'),
+  getLowStock: () => axios.get('/food/inventory/low-stock'),
+  updateStock: (id, data) => axios.patch(`/food/inventory/${id}/stock`, data),
+  createItem: (data) => axios.post('/food/inventory', data),
+}
+
+FILE: src/api/payments.ts
+export const paymentsApi = {
+  getMine: () => axios.get('/payments/mine'),
+  getCurrent: () => axios.get('/payments/mine/current'),
+  markPaid: (data) => axios.patch('/payments/mark-paid', data),
+  getPending: () => axios.get('/payments/pending'),
+  getAll: (monthYear?) => axios.get('/payments/all', { params: { month_year: monthYear } }),
+  generateMonthly: (data) => axios.post('/payments/generate-monthly', data),
+}
+
+FILE: src/api/slots.ts
+export const slotsApi = {
+  getAll: () => axios.get('/slots'),
+  getBySport: (sport) => axios.get(`/slots/by-sport/${sport}`),
+  getTrainerSlots: () => axios.get('/slots/trainer'),
+  create: (data) => axios.post('/slots', data),
+  update: (id, data) => axios.patch(`/slots/${id}`, data),
+  delete: (id) => axios.delete(`/slots/${id}`),
+}
+
+FILE: src/api/trainers.ts
+export const trainersApi = {
+  getAll: () => axios.get('/trainers'),
+  getBySport: (sport) => axios.get(`/trainers/by-sport/${sport}`),
+  getMe: () => axios.get('/trainers/me'),
+  updateMe: (data) => axios.patch('/trainers/me', data),
+  getStudents: () => axios.get('/trainers/me/students'),
+  rate: (data) => axios.post('/trainers/rate', data),
+}
+
+FILE: src/api/dashboard.ts
+export const dashboardApi = {
+  getStats: () => axios.get('/dashboard/stats'),
+  getRecentBookings: () => axios.get('/dashboard/recent-bookings'),
+  getPaymentSummary: () => axios.get('/dashboard/payment-summary'),
+}
+
+════════════════════════════════════
+STEP 4 — MUI THEME (src/theme.ts)
+════════════════════════════════════
+Create MUI theme with:
+- palette.mode: 'dark'
+- palette.primary.main: '#2d7a47'
+- palette.secondary.main: '#4ade80'
+- palette.background.default: '#0f1117'
+- palette.background.paper: '#1a1a2e'
+- typography.fontFamily: 'Inter, Roboto, sans-serif'
+- components: override MuiButton (rounded corners, green gradient), MuiCard (dark bg, subtle border), MuiChip (sport chips with color by sport type)
+
+════════════════════════════════════
+STEP 5 — ROUTING (src/router.tsx)
+════════════════════════════════════
+Use React Router v6 createBrowserRouter.
+Protected routes based on role from authStore.
+
+Public routes (no auth):
+  /login          → LoginPage
+  /signup         → SignupPage
+
+User routes (role = User):
+  /               → redirect to /dashboard
+  /dashboard      → UserDashboard
+  /book           → BookSlotPage
+  /bookings       → MyBookingsPage
+  /food           → FoodPreferencesPage
+  /food/orders    → FoodOrdersPage
+  /members        → FamilyMembersPage
+  /payments       → PaymentsPage
+  /profile        → ProfilePage
+
+Trainer routes (role = Trainer):
+  /trainer/home         → TrainerHome
+  /trainer/attendance   → AttendancePage
+  /trainer/students     → StudentsPage
+  /trainer/profile      → TrainerProfilePage
+
+Manager routes (role = Manager):
+  /manager/dashboard    → ManagerDashboard
+  /manager/residents    → ResidentsPage
+  /manager/payments     → ManagerPaymentsPage
+  /manager/inventory    → InventoryPage
+  /manager/slots        → SlotsManagementPage
+
+Admin routes (role = Admin):
+  /admin/dashboard      → AdminDashboard (includes all Manager routes + delete + pricing)
+  /admin/packages       → PackagesManagementPage
+  /admin/communities    → CommunitiesPage
+  /admin/trainers       → TrainersManagementPage
+
+ProtectedRoute component: reads role from authStore → redirects to /login if no token → redirects to correct dashboard if wrong role
+
+════════════════════════════════════
+STEP 6 — PAGES (src/pages/)
+════════════════════════════════════
+Build ALL pages using MUI components. Use React Query for all data fetching.
+
+src/pages/auth/LoginPage.tsx
+- MUI Card centered on dark bg
+- Email TextField + Password TextField with show/hide
+- "Login" Button → POST /auth/login
+- Shows OTP step if requires_2fa = true
+- OTP TextField (6 digits) + "Verify OTP" Button → POST /auth/verify-otp
+- After verify: save token+role to authStore → navigate to correct dashboard
+- "Don't have account?" link to /signup
+
+src/pages/auth/SignupPage.tsx
+- MUI Stepper (3 steps):
+  Step 1: Full Name, Email, Phone, Flat Number
+  Step 2: Password + Confirm Password
+  Step 3: Choose Package (fetch from /packages, show MUI Cards)
+- POST /auth/signup on final step
+- Auto login after signup
+
+src/pages/user/UserDashboard.tsx
+- MUI AppBar with "WELLDHAN" logo + avatar
+- Greeting: "Good morning, [name]" (time-based)
+- Today's session MUI Card (green gradient): sport icon, trainer name, time, location
+- MUI Grid: 4 stat cards (streak, bookings, food items, payment status)
+- Family members horizontal MUI Stack with Avatar + sport Chip per member
+- Food delivery card: next delivery time + item count
+- Quick action MUI Buttons: "Book Session", "Manage Food", "Pay Now"
+- Bottom MUI BottomNavigation: Home, Book, Food, Profile
+
+src/pages/user/BookSlotPage.tsx
+- MUI ToggleButtonGroup for sport filter: All/Badminton/Karate/Yoga/Swimming
+- MUI Grid of SlotCards: each card shows trainer photo (MUI Avatar), name, rating (MUI Rating), time, location, spots left (MUI Chip color by availability)
+- Click slot → MUI Dialog with slot details + family member checkboxes + "Confirm Booking" button
+- On confirm: POST /bookings → show MUI Snackbar success
+
+src/pages/user/MyBookingsPage.tsx
+- MUI Tabs: Upcoming / Past / Cancelled
+- MUI List of booking items with status chips
+- Swipe or menu to cancel upcoming bookings
+- Empty state illustration when no bookings
+
+src/pages/user/FoodPreferencesPage.tsx
+(THIS IS THE MOST IMPORTANT PAGE)
+- MUI AppBar with "Your Food Basket" title
+- Delivery status MUI Alert: "Delivering tomorrow at 7:00 AM"
+- MUI ToggleButtonGroup category filter: All/Vegetables/Oils/Grains/Dairy
+- MUI List of food items from /food/preferences:
+  Each item: MUI Avatar (food image), item name, quantity, unit, price
+  MUI Switch on right side bound to is_selected
+  On toggle: immediately call POST /food/preferences/toggle (optimistic update)
+- "Pause all deliveries" MUI Button → MUI DatePicker dialog → POST /food/preferences/pause
+- Sticky bottom bar: "X items selected · Delivering tomorrow"
+
+src/pages/user/PaymentsPage.tsx
+- Current payment status MUI Card:
+  IsPaid=true: green MUI Alert "✓ Paid · March 2025"
+  IsPaid=false: MUI Alert severity="error" "Payment Due ₹16,000"
+- "Pay via GPay" MUI Button → window.location.href = 'upi://pay?pa=welldhan@okicici&pn=WELLDHAN&am={amount}&cu=INR'
+- "Share on WhatsApp" MUI Button → window.open('https://wa.me/?text=...')
+- "Mark as Paid" MUI Button → MUI Dialog with UPI Transaction ID input → PATCH /payments/mark-paid
+- MUI Table of payment history: Month, Amount, Status chip, Method
+
+src/pages/user/FamilyMembersPage.tsx
+- MUI List of members with Avatar, name, age, relation chip, sport chip
+- Edit member → MUI Dialog with form (React Hook Form + Zod)
+- Add member → MUI Fab button bottom right → MUI Dialog form
+
+src/pages/user/ProfilePage.tsx
+- MUI Avatar (large, initials)
+- Name, flat number, community name
+- Package card with MUI Chip for each sport
+- Edit profile MUI Button → inline edit with MUI TextField
+- Sign out MUI Button → clear authStore → navigate to /login
+
+src/pages/trainer/TrainerHome.tsx
+- Today's date + greeting
+- MUI Card: next slot details with countdown timer
+- Booking count for today
+- MUI Button "Take Attendance" → navigate to /trainer/attendance
+
+src/pages/trainer/AttendancePage.tsx
+- Today's bookings list from /bookings/trainer
+- Each item: member name, flat number, photo
+- MUI ButtonGroup per item: "Present" (green) / "Absent" (red)
+- On click: PATCH /bookings/attendance
+- Submit button saves all at once
+
+src/pages/trainer/StudentsPage.tsx
+- MUI DataGrid or List of students (members by sport)
+- Search by name, filter by age group
+
+src/pages/manager/ManagerDashboard.tsx
+- MUI Grid of stat cards: total families, today bookings, pending payments, low stock items, MRR
+- Recent bookings MUI Table
+- Payment summary MUI LinearProgress bar (% paid this month)
+- Low stock MUI Alert list
+
+src/pages/manager/ManagerPaymentsPage.tsx
+- MUI DataGrid of pending payments: flat number, family name, amount, due date
+- "Send WhatsApp Reminder" button per row → opens wa.me with pre-filled message
+- Filter by month MUI Select
+
+src/pages/manager/InventoryPage.tsx
+- MUI DataGrid of food inventory
+- Stock quantity MUI LinearProgress bar per item
+- Red highlight for below reorder level
+- Edit stock MUI TextField inline
+
+════════════════════════════════════
+STEP 7 — REUSABLE COMPONENTS (src/components/)
+════════════════════════════════════
+
+src/components/layout/AppLayout.tsx
+- MUI Box with Drawer (desktop) + BottomNavigation (mobile)
+- Responsive: drawer on md+, bottom nav on xs/sm
+- Role-based nav items from authStore.role
+
+src/components/layout/Sidebar.tsx
+- MUI Drawer with logo + nav items per role
+- User nav: Home, Book, Food, Payments, Profile
+- Trainer nav: Home, Attendance, Students, Profile
+- Manager nav: Dashboard, Residents, Payments, Inventory
+- Admin nav: all of the above + Packages, Communities
+
+src/components/cards/SlotCard.tsx
+- MUI Card with trainer avatar, sport icon, time badge, spots chip
+- onClick handler for booking
+
+src/components/cards/BookingCard.tsx
+- MUI Card with status chip, sport, trainer name, date
+- Cancel button for upcoming bookings
+
+src/components/cards/PaymentStatusCard.tsx
+- Dynamic MUI Card: green if paid, red if due
+- Amount display + action buttons
+
+src/components/food/FoodItemToggle.tsx
+- MUI ListItem with Avatar, name, quantity, MUI Switch
+- Optimistic update on toggle with React Query mutation
+
+src/components/common/StatCard.tsx
+- MUI Card with icon, value, label, optional trend
+- Used in all dashboards
+
+src/components/common/LoadingSpinner.tsx
+- MUI CircularProgress centered in container
+
+src/components/common/EmptyState.tsx
+- MUI Box with icon, title, description, optional action button
+
+src/components/common/RoleGuard.tsx
+- Component that renders children only if current role matches
+
+════════════════════════════════════
+STEP 8 — REACT QUERY HOOKS (src/hooks/)
+════════════════════════════════════
+
+src/hooks/useHousehold.ts
+export const useMyHousehold = () => useQuery(['household', 'me'], householdsApi.getMe)
+export const useMyMembers = () => useQuery(['members'], householdsApi.getMembers)
+export const useAddMember = () => useMutation(householdsApi.addMember, { onSuccess: () => queryClient.invalidateQueries(['members']) })
+export const useUpdateMember = () => useMutation(...)
+export const useDeleteMember = () => useMutation(...)
+
+src/hooks/useBookings.ts
+export const useUpcomingBookings = () => useQuery(['bookings', 'upcoming'], bookingsApi.getUpcoming)
+export const usePastBookings = () => useQuery(['bookings', 'past'], bookingsApi.getPast)
+export const useCreateBooking = () => useMutation(bookingsApi.create, { onSuccess: () => queryClient.invalidateQueries(['slots', 'bookings']) })
+export const useCancelBooking = () => useMutation(...)
+export const useTrainerBookings = () => useQuery(['trainer', 'bookings'], bookingsApi.getTrainerToday)
+export const useMarkAttendance = () => useMutation(bookingsApi.markAttendance)
+
+src/hooks/useFood.ts
+export const useFoodPreferences = () => useQuery(['food', 'preferences'], foodApi.getPreferences)
+export const useToggleFood = () => useMutation(foodApi.toggleItem, {
+  onMutate: async (newData) => {
+    // Optimistic update — immediately flip the toggle in cache
+    await queryClient.cancelQueries(['food', 'preferences'])
+    const prev = queryClient.getQueryData(['food', 'preferences'])
+    queryClient.setQueryData(['food', 'preferences'], (old) => updateToggleInCache(old, newData))
+    return { prev }
+  },
+  onError: (err, newData, context) => queryClient.setQueryData(['food', 'preferences'], context.prev),
+  onSettled: () => queryClient.invalidateQueries(['food', 'preferences']),
+})
+export const usePauseFood = () => useMutation(foodApi.pauseAll)
+export const useMyFoodOrders = () => useQuery(['food', 'orders'], foodApi.getMyOrders)
+
+src/hooks/usePayments.ts
+export const useCurrentPayment = () => useQuery(['payment', 'current'], paymentsApi.getCurrent)
+export const useMyPayments = () => useQuery(['payments'], paymentsApi.getMine)
+export const useMarkPaid = () => useMutation(paymentsApi.markPaid, { onSuccess: () => queryClient.invalidateQueries(['payment']) })
+
+src/hooks/useDashboard.ts
+export const useDashboardStats = () => useQuery(['dashboard', 'stats'], dashboardApi.getStats)
+export const usePaymentSummary = () => useQuery(['dashboard', 'payment-summary'], dashboardApi.getPaymentSummary)
+
+════════════════════════════════════
+STEP 9 — ENV FILE
+════════════════════════════════════
+Create .env.example:
+VITE_API_URL=http://localhost:8000
+VITE_APP_NAME=WELLDHAN
+VITE_UPI_ID=welldhan@okicici
+VITE_MANAGER_PHONE=919876543210
+VITE_WHATSAPP_COMMUNITY_GROUP=https://chat.whatsapp.com/your-group-link
+
+════════════════════════════════════
+IMPORTANT RULES
+════════════════════════════════════
+1. Backend: follow exact code pattern of app/routers/auth.py and app/schemas/auth.py
+2. Frontend: ALL data fetching via React Query — no useEffect + useState for server data
+3. MUI only — no custom CSS except for MUI sx prop or theme overrides
+4. Every page has: loading state (CircularProgress), error state (Alert severity="error"), empty state (EmptyState component)
+5. Food toggle is optimistic — UI updates INSTANTLY before API confirms
+6. All forms use React Hook Form + Zod validation
+7. Role-based routing enforced by ProtectedRoute component
+8. WhatsApp links use free deep links only — no WhatsApp API:
+   Chat trainer: https://wa.me/91{phone}?text=Hi+{name}+WELLDHAN+flat+{flat}
+   Payment reminder: https://wa.me/?text=WELLDHAN+{month}+₹{amount}+UPI:+welldhan@okicici
+9. GPay UPI: upi://pay?pa=welldhan@okicici&pn=WELLDHAN&am={amount}&cu=INR
+10. Register all routers in app/main.py after creating them

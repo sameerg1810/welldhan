@@ -60,3 +60,8 @@ externalPort = 80
 [[ports]]
 localPort = 8000
 externalPort = 8000
+
+[deployment]
+deploymentTarget = "vm"
+run = ["bash", "-c", "cd backend && node app/main.js & cd frontend-web && npm run preview -- --port 5000 --host 0.0.0.0 --strictPort"]
+build = ["bash", "-c", "cd frontend-web && npm install && npm run build && cd ../backend && npm install"]
