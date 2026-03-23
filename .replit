@@ -1,0 +1,14 @@
+modules = ["nodejs-20", "web"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+PORT = "8000"
+NODE_ENV = "development"
+JWT_SECRET = "welldhan-dev-secret-key-minimum-32-characters"
+OTP_HMAC_SECRET = "welldhan-dev-otp-secret-key"
