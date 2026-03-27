@@ -1,29 +1,61 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-type Role = 'User' | 'Trainer' | 'Manager' | 'Admin' | null;
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 interface AuthState {
-  token: string | null;
-  role: Role;
-  userId: string | null;
-  userData: any | null;
-  setAuth: (token: string, role: Role, userId: string, userData: any) => void;
-  clearAuth: () => void;
+  token: string | null
+  role: 'User' | 'Trainer' | 'Manager' | 'Admin' | null
+  userId: string | null
+  userData: any | null
+  isAuthenticated: boolean
+  setAuth: (token: string, role: string, userId: string, userData: any) => void
+  clearAuth: () => void
+  updateUserData: (data: any) => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
       role: null,
       userId: null,
       userData: null,
-      setAuth: (token, role, userId, userData) =>
-        set({ token, role, userId, userData }),
-      clearAuth: () =>
-        set({ token: null, role: null, userId: null, userData: null }),
+      isAuthenticated: false,
+
+      setAuth: (token: string, role: string, userId: string, userData: any) => {
+        set({
+          token,
+          role: role as any,
+          userId,
+          userData,
+          isAuthenticated: true,
+        })
+      },
+
+      clearAuth: () => {
+        set({
+          token: null,
+          role: null,
+          userId: null,
+          userData: null,
+          isAuthenticated: false,
+        })
+      },
+
+      updateUserData: (data: any) => {
+        set((state) => ({
+          userData: { ...state.userData, ...data },
+        }))
+      },
     }),
-    { name: 'welldhan_auth' }
+    {
+      name: 'welldhan-auth',
+      partialize: (state) => ({
+        token: state.token,
+        role: state.role,
+        userId: state.userId,
+        userData: state.userData,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
   )
-);
+)
